@@ -78,7 +78,7 @@ DATABASES = {
         'ENGINE': 'django.db.backends.mysql',
         'NAME': 'openjobsdb',
         'USER': 'root',
-        'PASSWORD': '1234',
+        'PASSWORD': 'admin123@',
         'HOST': '',
     }
 }
