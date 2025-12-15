@@ -2,7 +2,7 @@ from django.contrib import admin
 from openjobs_app.models import *
 
 class UserAdmin(admin.ModelAdmin):
-    list_display = ['id' ,'first_name', 'last_name', 'username' ,'gender', 'avatar' ,'email', 'phone_number' ,'date_of_birth' ,'role', 'active', 'created_date']
+    list_display = ['id' ,'first_name', 'last_name', 'username' ,'gender', 'avatar' ,'email', 'phone_number' ,'date_of_birth' ,'role', 'is_active', 'created_date']
     search_fields = ['email']
 
 class MyAdminSite(admin.AdminSite):

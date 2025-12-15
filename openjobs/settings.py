@@ -105,11 +105,18 @@ import cloudinary
 import cloudinary.api
 import cloudinary.uploader
 
+# cloudinary.config(
+#     cloud_name= "dnbno2tkc",
+#     api_key="896257422881191",
+#     api_secret="X6BnafHH4o_-bojDL2gPXzPHQDE"
+# )
+
 cloudinary.config(
-    cloud_name= "dnbno2tkc",
-    api_key="896257422881191",
-    api_secret="X6BnafHH4o_-bojDL2gPXzPHQDE"
+    cloud_name='dyupzyqwj',
+    api_key='497522642724389',
+    api_secret='1qiLwjHVPTBX9_BYZKsRB2FfWJA',
 )
+
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
@@ -145,3 +152,7 @@ AUTH_USER_MODEL = 'openjobs_app.User'
 
 CLIENT_ID = 'SmLtbIKQLZLiYOZgsOxd3RoMyjjeM1NJHPLkW529'
 CLIENT_SECRET = 'HibpcvIy2N4Rie1sN4yEX9nHkFthCKTKa8T7PQ3UQi7fE734Xfxq7vElgsXo9naA35TRyr3vvrv9xy1QXzcXCjDEsSpozNScZ3CaUmfcKa47HsAYbYDJm2NThrQojcaM'
+
+APP_CONFIG ={
+    'EMPLOYER_MIN_IMAGES':3
+}
