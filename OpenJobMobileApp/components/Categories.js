@@ -2,13 +2,17 @@ import { useEffect, useState } from "react";
 import Apis, {endpoints} from "../utils/Apis";
 import { Chip } from "react-native-paper";
 import { View } from "react-native";
+import MyStyles from "../styles/MyStyles";
 
 const Categories=()=>{
-    const [categories,setCatetogories]=useState([]);
+    const [categories,setCategories]=useState([]);
 
     const loadCates=async()=>{
         let res=await Apis.get(endpoints['categories']);
-        setCatetogories(res.data);
+        setCategories(res.data);
+
+        
+
     }
 
     useEffect(()=>{
@@ -16,9 +20,9 @@ const Categories=()=>{
     },[]);
 
     return (
-       <View>
+       <View style={MyStyles.row}>
             {categories.map(c=>
-                <Chip key={c.id} icon='label'>{c.name}</Chip>)}
+                <Chip style={MyStyles.margin} key={c.id} icon='label'>{c.name}</Chip>)}
        </View>
     );
 }

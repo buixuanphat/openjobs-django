@@ -12,15 +12,16 @@ from rest_framework.views import APIView
 from django.conf import settings
 
 from openjobs.wsgi import application
+from openjobs_app import perm
 from openjobs_app.models import User, RoleUser, Job, UserEmployer, Application, ApplicationStatus, Category
-from openjobs_app.permissions import isEmployer
+from openjobs_app.perm import isEmployer
 from openjobs_app.serializers import UserSerializer, CandidateRegistrationSerializer, EmployerRegistrationSerializer, \
     JobSerializer, ApplicationSerializer, CategorySerializer
 
 
 class CandidateRegistrationView(generics.CreateAPIView):
     serializer_class = CandidateRegistrationSerializer
-    permission_classes = [permissions.AllowAny]
+    permission_classes = [permissions.AllowAny()]
     parser_classes = [parsers.MultiPartParser, parsers.FormParser]
 
     @swagger_auto_schema(operation_description='CandidateRegistration')
@@ -29,7 +30,7 @@ class CandidateRegistrationView(generics.CreateAPIView):
 
 class EmployerRegistrationView(generics.CreateAPIView):
     serializer_class = EmployerRegistrationSerializer
-    permission_classes = [permissions.AllowAny]
+    permission_classes = [permissions.AllowAny()]
     parser_classes = [parsers.MultiPartParser,parsers.FormParser]
 
     @swagger_auto_schema(operation_description='EmployerRegistration',
@@ -91,7 +92,7 @@ class JobViewSet(viewsets.ModelViewSet):
 
     def get_permissions(self):
         if self.action=='create':
-            return [isEmployer()]
+            return [perm.isEmployer()]
 
         if self.action in ['update', 'partial_update', 'destroy']:
             return [permissions.IsAuthenticated()]
@@ -166,6 +167,7 @@ class ApplicationViewSet(mixins.CreateModelMixin,mixins.ListModelMixin,
 class CategoryView(viewsets.ViewSet, generics.ListAPIView):
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
+    permission_classes = [permissions.AllowAny]
 
 
 
