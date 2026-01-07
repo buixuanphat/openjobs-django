@@ -37,8 +37,10 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'openjobs_app.apps.OpenjobsAppConfig',
     'rest_framework',
+    'rest_framework.authtoken',
     'drf_yasg',
     'oauth2_provider',
+
 ]
 
 MIDDLEWARE = [
@@ -47,8 +49,10 @@ MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'oauth2_provider.middleware.OAuth2TokenMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+
 ]
 
 ROOT_URLCONF = 'openjobs.urls'
@@ -101,6 +105,14 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
+
+
+AUTHENTICATION_BACKENDS = [
+    'django.contrib.auth.backends.ModelBackend',
+    'oauth2_provider.backends.OAuth2Backend',
+]
+
+
 import cloudinary
 import cloudinary.api
 import cloudinary.uploader
@@ -112,16 +124,24 @@ import cloudinary.uploader
 # )
 
 cloudinary.config(
-    cloud_name='dyupzyqwj',
-    api_key='497522642724389',
-    api_secret='1qiLwjHVPTBX9_BYZKsRB2FfWJA',
+    cloud_name= "dyupzyqwj",
+    api_key="497522642724389",
+    api_secret="1qiLwjHVPTBX9_BYZKsRB2FfWJA",
+    secure=True,
 )
+
 
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'oauth2_provider.contrib.rest_framework.OAuth2Authentication',
-    )
+        'rest_framework.authentication.SessionAuthentication',
+    ),
+    'DEFAULT_PERMISSION_CLASSES': (
+            'rest_framework.permissions.IsAuthenticated',
+
+    ),
+
 }
 
 # Internationalization
@@ -156,3 +176,10 @@ CLIENT_SECRET = 'HibpcvIy2N4Rie1sN4yEX9nHkFthCKTKa8T7PQ3UQi7fE734Xfxq7vElgsXo9na
 APP_CONFIG ={
     'EMPLOYER_MIN_IMAGES':3
 }
+
+OAUTH2_INFO={
+    "client_id":"8hVoyGhFlgsvy5v0gdFtoVWZeq3qCvOOzyL61agc",
+    "client_secret":"KdNcz0vpECAlmZdJlJ9aTre2lCcGHhYVv7Hr2dWyV3LARWbML7MytZtSLk0UYq3ftCHgTKYHaz9A5TBrZ5Xi8eaGsyKVDergCPpDuMGzpjJ23X4FXMYdj1YrxPWjFsYz"
+}
+
+ALLOWED_HOSTS = ['192.168.1.5', '127.0.0.1', 'localhost']

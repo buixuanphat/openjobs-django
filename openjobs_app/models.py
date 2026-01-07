@@ -73,7 +73,7 @@ class Employer(BaseModel):
     address = models.TextField()
 
     def __str__(self):
-        return self.name
+        return self.company_name
 
 
 class UserEmployer(BaseModel):
@@ -98,7 +98,7 @@ class Job(BaseModel):
 
 
 class Application(BaseModel):
-    cv = CloudinaryField(null=True, blank=True)
+    cv = CloudinaryField(null=True, blank=True,resource_type='raw')#để định dạng file
     status = models.CharField(max_length=120, choices=ApplicationStatus.choices,
                               default=ApplicationStatus.PENDING)
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='applications_submitted')
@@ -133,6 +133,9 @@ class WorkingTime(BaseModel):
     start_time = models.TimeField()
     end_time = models.TimeField()
     employer = models.ForeignKey(Employer, on_delete=models.CASCADE, related_name='working_times_templates')
+
+    def __str__(self):
+        return self.name
 
 
 class JobWorkingTime(BaseModel):
