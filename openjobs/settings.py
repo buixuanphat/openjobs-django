@@ -178,8 +178,8 @@ APP_CONFIG ={
 }
 
 OAUTH2_INFO={
-    "client_id":"8hVoyGhFlgsvy5v0gdFtoVWZeq3qCvOOzyL61agc",
-    "client_secret":"KdNcz0vpECAlmZdJlJ9aTre2lCcGHhYVv7Hr2dWyV3LARWbML7MytZtSLk0UYq3ftCHgTKYHaz9A5TBrZ5Xi8eaGsyKVDergCPpDuMGzpjJ23X4FXMYdj1YrxPWjFsYz"
+    "client_id":"xIxeTmq39UZs9Lx8wiXTvU1W3hNN2RI0b5e8jSP5",
+    "client_secret":"Xv7dEFnlWXFYiwnsWGm8tFqoY144Ljv2JFye2L3kuBURu9tPMXA4QmXFDyVNT5MjiDxib5kYhnbBw8QHJLowvVkEG0jtFvq5EN55CUPDln4rTY88HNmWTx4QLmkOvZla"
 }
 
 

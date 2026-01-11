@@ -7,21 +7,23 @@ from oauth2_provider.models import AccessToken
 from rest_framework import viewsets, generics, permissions, parsers, status, serializers, mixins
 from rest_framework.authtoken.models import Token
 from rest_framework.decorators import action
+from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from django.conf import settings
 
 from openjobs.wsgi import application
-from openjobs_app import perm
-from openjobs_app.models import User, RoleUser, Job, UserEmployer, Application, ApplicationStatus, Category
-from openjobs_app.perm import isEmployer
+from openjobs_app import perms, paginators
+from openjobs_app.models import User, RoleUser, Job, UserEmployer, Application, ApplicationStatus, Category, \
+    WorkingTime, JobWorkingTime
+from openjobs_app.perms import isEmployer
 from openjobs_app.serializers import UserSerializer, CandidateRegistrationSerializer, EmployerRegistrationSerializer, \
-    JobSerializer, ApplicationSerializer, CategorySerializer
+    JobSerializer, ApplicationSerializer, CategorySerializer, WorkingTimeSerializer
 
 
 class CandidateRegistrationView(generics.CreateAPIView):
     serializer_class = CandidateRegistrationSerializer
-    permission_classes = [permissions.AllowAny()]
+    permission_classes = [AllowAny]
     parser_classes = [parsers.MultiPartParser, parsers.FormParser]
 
     @swagger_auto_schema(operation_description='CandidateRegistration')
@@ -30,7 +32,7 @@ class CandidateRegistrationView(generics.CreateAPIView):
 
 class EmployerRegistrationView(generics.CreateAPIView):
     serializer_class = EmployerRegistrationSerializer
-    permission_classes = [permissions.AllowAny()]
+    permission_classes = [AllowAny]
     parser_classes = [parsers.MultiPartParser,parsers.FormParser]
 
     @swagger_auto_schema(operation_description='EmployerRegistration',
@@ -63,8 +65,20 @@ class UserProfileViewSet(viewsets.ViewSet):
             return [permissions.IsAdminUser()]
         return [permissions.AllowAny()]
 
-    @action(methods=['get'], detail=False, url_path='current-user')
+    @action(methods=['get','patch','put'], detail=False, url_path='current-user')
     def get_current_user(self, request):
+        user = self.request.user
+        if request.method in ['PATCH', 'PUT']:
+            serializers=UserSerializer(user,data=request.data,partial=True)
+            if serializers.is_valid():
+                serializers.save()
+                return Response(serializers.data, status=status.HTTP_200_OK)
+            return Response(serializers.errors, status=status.HTTP_400_BAD_REQUEST)
+        if not user.is_active:
+            return Response(
+                {"error": "pending_approval", "message": "Tài khoản của bạn đang chờ quản trị viên phê duyệt."},
+                status=status.HTTP_403_FORBIDDEN
+            )
         return Response(self.serializer_class(request.user).data, status=status.HTTP_200_OK)
 
     @action(methods=['post'], detail=True, url_path='verify-employer')
@@ -89,42 +103,58 @@ class AuthInfo(APIView):
 class JobViewSet(viewsets.ModelViewSet):
     queryset = Job.objects.filter(active=True)
     serializer_class = JobSerializer
+    pagination_class = paginators.ItemPaginator
 
     def get_permissions(self):
-        if self.action=='create':
-            return [perm.isEmployer()]
-
+        if self.action in ['create', 'my_jobs']:
+            return [perms.isEmployer()]
         if self.action in ['update', 'partial_update', 'destroy']:
             return [permissions.IsAuthenticated()]
-
         return [permissions.AllowAny()]
 
+    @action(methods=['get'],detail=False,url_path='my-jobs')
+    def my_jobs(self, request):
+        user_emp_link = UserEmployer.objects.filter(user=request.user).first()
+        if not user_emp_link:
+            return Response({"detail": "Tài khoản của bạn chưa được liên kết với công ty nào."},
+                            status=status.HTTP_404_NOT_FOUND)
+        jobs = Job.objects.filter(employer=user_emp_link.employer, active=True).order_by('-created_date')
+        page = self.paginate_queryset(jobs)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+
+        serializer = self.get_serializer(jobs, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
     def perform_create(self, serializer):
         user_emp_link = UserEmployer.objects.filter(user=self.request.user).first()
         if user_emp_link:
             serializer.save(employer=user_emp_link.employer)
         else:
-            raise serializers.ValidationError({"detail": "Tài khoản của bạn chưa được liên kết "
-                                                         "với công ty nào."})
-
+            raise serializers.ValidationError({"detail": "Lỗi xác thực Employer"})
     def get_queryset(self):
         queryset=Job.objects.filter(active=True)
+
+        q=self.request.query_params.get('name')
+        if q:
+            queryset = queryset.filter(name__icontains=q)
+
         location=self.request.query_params.get('location')
         if location:
             queryset=queryset.filter(location__icontains=location)
 
         min_salary=self.request.query_params.get('min_salary')
         if min_salary:
-            queryset=queryset.filter(min_salary__gte=min_salary)
+            queryset=queryset.filter(min_salary__gte=float(min_salary))
 
         category_id=self.request.query_params.get('category_id')
-        if category_id:
+        if category_id and category_id!='null':
             queryset=queryset.filter(job_categories_links__category_id=category_id)
 
-        working_time_id=self.request.query_params.get('working_time_id')
-        if working_time_id:
-            queryset=queryset.filter(job_time_slots__working_time_id=working_time_id)
+        working_time = self.request.query_params.get('working_time_id')
+        if working_time:
+            queryset = queryset.filter(job_time_slots__working_time__name__icontains=working_time)
         return queryset
 
 
@@ -136,11 +166,17 @@ class ApplicationViewSet(mixins.CreateModelMixin,mixins.ListModelMixin,
 
     def get_queryset(self):
         user=self.request.user
+        queryset = self.queryset
         if user.role == RoleUser.ADMIN or user.is_staff:
-            return self.queryset
-        if user.role == RoleUser.EMPLOYER:
-            return self.queryset.filter(job__employer__managing_users__user=user)
-        return self.queryset.filter(user=user)
+            queryset = queryset
+        elif user.role == RoleUser.EMPLOYER:
+            queryset = queryset.filter(job__employer__managing_users__user=user)
+        else:
+            queryset = queryset.filter(user=user)
+        job_id = self.request.query_params.get('job_id')
+        if job_id:
+            queryset = queryset.filter(job_id=job_id)
+        return queryset.order_by('-created_date')
 
     def get_permissions(self):
         if self.action=='change-status':
@@ -148,28 +184,40 @@ class ApplicationViewSet(mixins.CreateModelMixin,mixins.ListModelMixin,
         return [permissions.IsAuthenticated()]
 
     def perform_create(self, serializer):
-        serializer.save(user=self.request.user)
+        user=self.request.user
+        cv_from_request=self.request.data.get('cv')
+        if cv_from_request:
+            serializer.save(user=user,cv=cv_from_request)
+        else:
+            user_cv = getattr(user, 'cv', None)
+            if user_cv:
+                serializer.save(user=user, cv=user_cv)
+            else:
+                serializer.save(user=user)
 
     @action(methods=['patch'], detail=True, url_path='change-status')
     def change_status(self, request, pk=None):
         application = self.get_object()
-        status = self.request.data.get('status')
+        new_status = self.request.data.get('status')
 
         valid_statuses = ApplicationStatus.values
-        if status in valid_statuses:
-            application.status=status
+        if new_status in valid_statuses:
+            application.status=new_status
             application.save()
             return Response({"msg":f"Đã cập nhật trạng thái thành công {application.get_status_display()}"},
                             status=status.HTTP_200_OK)
         return Response({"error":f"Trạng thái không hợp lê!"}, status=status.HTTP_400_BAD_REQUEST)
 
 
-class CategoryView(viewsets.ViewSet, generics.ListAPIView):
+class CategoryView(viewsets.ModelViewSet, generics.ListAPIView):
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
     permission_classes = [permissions.AllowAny]
 
-
+class WorkingTimeViewSet(viewsets.ReadOnlyModelViewSet):
+    queryset = WorkingTime.objects.all()
+    serializer_class = WorkingTimeSerializer
+    permission_classes = [permissions.AllowAny]
 
 
 

@@ -23,4 +23,5 @@ admin_site.register(JobWorkingTime)
 admin_site.register(WorkingTime)
 admin_site.register(Category)
 
+
 admin_site.register(Application)

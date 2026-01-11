@@ -10,6 +10,7 @@ r.register('profile', views.UserProfileViewSet, basename='profile')
 r.register('jobs', views.JobViewSet, basename='jobs')
 r.register('applications',views.ApplicationViewSet, basename='applications')
 r.register('categories',views.CategoryView, basename='categories')
+r.register('working-times', views.WorkingTimeViewSet, basename='working-times')
 
 urlpatterns = [
     path('', include(r.urls)),
