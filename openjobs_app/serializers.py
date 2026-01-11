@@ -2,15 +2,14 @@ from cloudinary.models import CloudinaryField
 from django.conf import settings
 from drf_yasg import openapi
 from rest_framework import serializers
-from openjobs_app.models import User, RoleUser, Employer, UserEmployer, Image, Job, Application, Category
-
+from openjobs_app.models import User, RoleUser, Employer, UserEmployer, Image, Job, Application, Category,WorkingTime
 
 class UserSerializer(serializers.ModelSerializer):
     # avatar = serializers.ImageField(required=False,allow_null=True)
 
     class Meta:
         model = User
-        fields = ['first_name', 'last_name', 'username', 'password' ,'gender', 'avatar' , 'email', 'phone_number' ,'date_of_birth','role']
+        fields = ['first_name', 'last_name', 'username', 'password' ,'gender', 'avatar' , 'email', 'phone_number' ,'date_of_birth','role','cv']
         extra_kwargs = {
             'password': {
                 'write_only': True,
@@ -20,7 +19,18 @@ class UserSerializer(serializers.ModelSerializer):
 
     def to_representation(self, instance):
         data = super().to_representation(instance)
-        data['avatar'] = instance.avatar.url
+        # data['avatar'] = instance.avatar.url
+        if instance.avatar:
+            data['avatar'] = instance.avatar.url
+        else:
+            data['avatar'] = None
+        if hasattr(instance, 'cv') and instance.cv:
+            if hasattr(instance.cv, 'url'):
+                data['cv'] = instance.cv.url
+            else:
+                data['cv'] = str(instance.cv)
+        else:
+            data['cv'] = None
         data['is_active'] = instance.is_active
         return data
 
@@ -95,13 +105,15 @@ class EmployerRegistrationSerializer(UserSerializer):
 
 class JobSerializer(serializers.ModelSerializer):
     employer_name = serializers.CharField(source='employer.company_name', read_only=True)
+    employer_logo=serializers.SerializerMethodField()
     working_times=serializers.SerializerMethodField()
     categories=serializers.SerializerMethodField()
+
     class Meta:
         model = Job
-        fields = ['name','description','skills','min_salary','max_salary','location',
-                  'map_url', 'payment_type','duration', 'employer', 'created_date',
-                  'employer_name','working_times','categories']
+        fields = ['id','name','description','skills','min_salary','max_salary','location',
+                  'map_url', 'payment_type','deadline', 'employer', 'created_date',
+                  'employer_name','working_times','categories','employer_logo']
         read_only_fields = ['employer','created_date']
 
     def get_working_times(self, obj):
@@ -112,26 +124,44 @@ class JobSerializer(serializers.ModelSerializer):
         links = obj.job_categories_links.all()
         return [link.category.name for link in links]
 
+    def get_employer_logo(self, obj):
+        if obj.employer and obj.employer.logo:
+            return obj.employer.logo.url
+        return None
+
+
+
 
 class ApplicationSerializer(serializers.ModelSerializer):
     user_name=serializers.CharField(source='user.username', read_only=True)
     job_name=serializers.CharField(source='job.name', read_only=True)
     status_display=serializers.CharField(source='get_status_display', read_only=True)
-
-    cv = serializers.FileField(required=False)
+    cv = serializers.SerializerMethodField()
     class Meta:
         model = Application
         fields = ['id', 'cv', 'status','status_display', 'job', 'user', 'user_name', 'job_name', 'created_date']
         read_only_fields = ['user','status', 'created_date']
 
+    #notesimpo
     def get_cv(self, obj):
-        if obj.cv:
-            if obj.cv:
-                return f"https://res.cloudinary.com/dyupzyqwj/raw/upload/{obj.cv.public_id}"
-            return None
+        if hasattr(obj.cv, 'url'):
+            url = obj.cv.url
+        else:
+            url = str(obj.cv)
+        if url.startswith('//'):
+            url = f"https:{url}"
+        if 'raw/upload' in url:
+            if not url.lower().endswith('.pdf'):
+                url = f"{url}.pdf"
+            return url
         return None
 
 class CategorySerializer(serializers.ModelSerializer):
     class Meta:
         model = Category
         fields = ['id', 'name']
+
+class WorkingTimeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = WorkingTime
+        fields = ['id', 'name', 'start_time', 'end_time']

@@ -48,6 +48,7 @@ class User(AbstractUser):
     date_of_birth = models.DateField(default=datetime.date.today)
     avatar = CloudinaryField(null=True, blank=True)
     role = models.CharField(max_length=20, choices=RoleUser.choices)
+    cv=CloudinaryField(null=True, blank=True,resource_type='raw')
 
     created_date = models.DateTimeField(auto_now_add=True)
     updated_date = models.DateTimeField(auto_now=True)
@@ -90,7 +91,9 @@ class Job(BaseModel):
     location = models.CharField(max_length=255)
     map_url = models.URLField()
     payment_type = models.CharField(max_length=120, choices=JobPaymentType.choices)
-    duration = models.IntegerField()
+    deadline = models.DateField(null=True, blank=True)
+    created_date = models.DateTimeField(auto_now_add=True)
+    updated_date = models.DateTimeField(auto_now=True)
     employer = models.ForeignKey(Employer, on_delete=models.CASCADE, related_name='job_post')
 
     def __str__(self):
