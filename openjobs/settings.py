@@ -82,7 +82,7 @@ DATABASES = {
         'ENGINE': 'django.db.backends.mysql',
         'NAME': 'openjobsdb',
         'USER': 'root',
-        'PASSWORD': 'admin123@',
+        'PASSWORD': '1234',
         'HOST': '',
     }
 }
@@ -182,4 +182,5 @@ OAUTH2_INFO={
     "client_secret":"KdNcz0vpECAlmZdJlJ9aTre2lCcGHhYVv7Hr2dWyV3LARWbML7MytZtSLk0UYq3ftCHgTKYHaz9A5TBrZ5Xi8eaGsyKVDergCPpDuMGzpjJ23X4FXMYdj1YrxPWjFsYz"
 }
 
-ALLOWED_HOSTS = ['192.168.1.5', '127.0.0.1', 'localhost']
+
+ALLOWED_HOSTS = ["192.168.1.5", "10.0.2.2", "192.168.1.2" ,"localhost"]
