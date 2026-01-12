@@ -61,6 +61,10 @@ export default StyleSheet.create({
         color: "#444",
         textAlign: "justify",
     },
+    subheader: { 
+        fontWeight: 'bold', 
+        color: '#1a73e8' 
+    },
 
    
     applyContainer: {

@@ -3,11 +3,12 @@ import MyStyles from "../../styles/MyStyles"
 import Styles from "./Styles";
 import Categories from "../../components/Categories";
 import Jobs from "../../components/Jobs";
-import { useContext, useMemo, useState } from "react";
+import React, { useContext, useMemo, useState } from "react";
 import JobFilter from "../../components/JobFilter";
 import { MyUserContext } from "../../utils/MyContexts";
 import { ScrollView } from "react-native";
 import { UserSearchStrategy, CandidateSearchStrategy } from "../../utils/SearchStrategies";
+import { useFocusEffect } from "@react-navigation/native";
 
 const Home=()=>{
     const [cateId, setCateId] = useState(null);
@@ -33,6 +34,7 @@ const Home=()=>{
             }
     }, [user, cateId, name, location, min_salary, working_time]);
 
+    
 
     return (   
         <>

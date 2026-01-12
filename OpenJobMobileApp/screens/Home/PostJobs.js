@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { use, useEffect, useState } from "react";
 import { ScrollView, Text, TouchableOpacity, View } from "react-native";
 import { Alert } from "react-native";
 import Apis, { authApis, endpoints } from "../../utils/Apis";
@@ -8,8 +8,10 @@ import MyStyles from "../../styles/MyStyles";
 import { Button, Chip, Menu, TextInput } from "react-native-paper";
 import DateTimePicker from '@react-native-community/datetimepicker';
 
-const PostJobs=()=>{
-    const [job,setJob]=useState({});
+const PostJobs=({route})=>{
+    const jobId = route.params?.jobId;
+
+    const [job,setJob]=useState({payment_type: 'monthly'});
     const [showDate, setShowDate] = useState(false); 
     const [date, setDate] = useState(new Date());
     const [showMenu, setShowMenu] = useState(false);
@@ -53,6 +55,28 @@ const PostJobs=()=>{
         }
     };
 
+    useEffect(()=>{
+        const loadJobDetails=async()=>{
+            if(jobId){
+                try {
+                    setLoading(true);
+                    let res=await Apis.get(endpoints['job-details'](jobId));
+                    setJob(res.data);
+
+                    if(res.data.deadline)
+                        setDate(new Date(res.data.deadline));
+            
+                } catch (ex) {
+                    console.error("Lỗi load chi tiết job:", ex);
+                    Alert.alert("Lỗi", "Không thể lấy thông tin tin đăng cũ!");
+                }finally{
+                    setLoading(false);
+                }
+            }
+        };
+        loadJobDetails();
+    },[jobId]);
+
     const postJob=async()=>{
         if(!job.name||!job.min_salary||!job.location||!job.deadline){
             Alert.alert("Vui lòng nhập các trường bắt buộc!");
@@ -63,10 +87,22 @@ const PostJobs=()=>{
         try {
             const token=await AsyncStorage.getItem("token");
 
-            let res=await authApis(token).post(endpoints['jobs'],job);
-            if(res.status===201){
-                Alert.alert("Thông báo","Tin tuyển dụng đã được đăng!");
-                nav.navigate("Home");
+            // let res=await authApis(token).post(endpoints['jobs'],job);
+            const dataToSend = { 
+            ...job, 
+            working_time_ids: selectedTimes 
+            };
+
+            let res;
+            if (jobId) {
+                res = await authApis(token).patch(endpoints['job-details'](jobId),dataToSend);
+            } else {
+                res = await authApis(token).post(endpoints['jobs'], dataToSend);
+            }
+
+           if (res.status === 201 || res.status === 200) {
+                Alert.alert("Thông báo", jobId ? "Cập nhật thành công!" : "Tin tuyển dụng đã được đăng!");
+                nav.navigate("MyJobs", { reload: true });
             }
         } catch (ex) {
             console.error(ex);
@@ -78,7 +114,7 @@ const PostJobs=()=>{
 
     return(
         <ScrollView style={MyStyles.padding}>
-            <Text style={MyStyles.title}>ĐĂNG TIN MỚI</Text>
+            <Text style={MyStyles.title}>{jobId ? "CHỈNH SỬA TIN" : "ĐĂNG TIN MỚI"}</Text>
             <TextInput 
                 style={MyStyles.margin}
                 value={job.name} 
@@ -182,7 +218,11 @@ const PostJobs=()=>{
                 <Menu.Item onPress={() => { update("payment_type", "weekly"); setShowMenu(false); }} title="Theo tuần" />
                 <Menu.Item onPress={() => { update("payment_type", "monthly"); setShowMenu(false); }} title="Theo tháng" />
             </Menu>
-            <Button style={{marginBottom:100}} mode="contained" icon="check" loading={loading} onPress={postJob}>Đăng Tin</Button>
+            <Button style={{marginBottom:100}} 
+                    mode="contained" 
+                    icon={jobId ? "pencil" : "check"} 
+                    loading={loading} 
+                    onPress={postJob}>{jobId ? "Cập nhật tin" : "Đăng Tin"}</Button>
         </ScrollView>
     );
 };

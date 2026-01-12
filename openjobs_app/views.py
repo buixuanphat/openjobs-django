@@ -128,11 +128,49 @@ class JobViewSet(viewsets.ModelViewSet):
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     def perform_create(self, serializer):
-        user_emp_link = UserEmployer.objects.filter(user=self.request.user).first()
-        if user_emp_link:
-            serializer.save(employer=user_emp_link.employer)
+        user_emp = UserEmployer.objects.filter(user=self.request.user).first()
+        if user_emp:
+            serializer.save(employer=user_emp.employer)
         else:
             raise serializers.ValidationError({"detail": "Lỗi xác thực Employer"})
+
+    def perform_update(self, serializer):
+        user_emp=UserEmployer.objects.filter(user=self.request.user).first()
+        if user_emp and serializer.instance.employer==user_emp.employer:
+            serializer.save()
+        else:
+            raise serializers.ValidationError({"detail": "Lỗi xác thực Employer"})
+    def perform_destroy(self, instance):
+        user_emp=UserEmployer.objects.filter(user=self.request.user).first()
+        if user_emp and instance.employer==user_emp.employer:
+            instance.active=False
+            instance.save()
+            return Response({"message": "Đã xóa tin tuyển dụng thành công!"},
+                            status=status.HTTP_204_NO_CONTENT)
+        else:
+            return Response({"detail": "Bạn không có quyền xóa tin này!"},
+                            status=status.HTTP_403_FORBIDDEN)
+
+    @action(methods=['get'], detail=False, url_path='my-jobs')
+    def my_jobs(self, request):
+        user_emp=UserEmployer.objects.filter(user=request.user).first()
+        if not user_emp:
+            return Response({"detail": "Bạn không phải là Employer hợp lệ."}, status=403)
+        is_history = request.query_params.get('history') == 'true'
+        if is_history:
+            jobs = Job.objects.filter(employer=user_emp.employer)
+        else:
+            jobs = Job.objects.filter(employer=user_emp.employer, active=True)
+
+        jobs = jobs.order_by('-created_date')
+        page = self.paginate_queryset(jobs)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+
+        serializer = self.get_serializer(jobs, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
     def get_queryset(self):
         queryset=Job.objects.filter(active=True)
 

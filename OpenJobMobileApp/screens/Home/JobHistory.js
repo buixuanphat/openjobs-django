@@ -15,7 +15,7 @@ const MyJobs=()=>{
     const loadMyJobs=async()=>{
         try {
             const token = await AsyncStorage.getItem("token");
-            let res = await authApis(token).get(`${endpoints['jobs']}my-jobs/`); 
+            let res = await authApis(token).get(`${endpoints['jobs']}my-jobs/?history=true`);
             setJobs(res.data.results || res.data); 
         } catch (ex) {
             console.error(ex);
@@ -35,42 +35,25 @@ const MyJobs=()=>{
         loadMyJobs();
     };
 
-    const handleDelete=(jobId)=>{
-        Alert.alert("Xác nhận","Bạn có chắc muốn xóa tin này?",[
-            {text:"Hủy"},
-            {text:"Xóa", 
-                onPress:async()=>{
-                    try {
-                        setLoading(true);
-                        const token=await AsyncStorage.getItem("token");
-                        const res=await authApis(token).delete(endpoints['job-details'](jobId));
-                        if (res.status === 204 || res.status === 200) {
-                            Alert.alert("Thành công", "Đã gỡ bỏ tin tuyển dụng!");
-                            await loadMyJobs(); 
-                        }
-                    } catch (ex) {
-                        console.error(ex);
-                        const errorMsg = ex.response?.data?.detail || "Không có quyền thực hiện hoặc lỗi hệ thống!";
-                        Alert.alert("Lỗi", errorMsg);
-                    }finally{
-                        setLoading(false);
-                    }
-                }
-            }
-        ]);
 
-    };
 
     const renderItem=({item})=>(
-        <Card style={MyStyles.margin}>
+        <Card style={[MyStyles.margin,
+            { opacity: item.active ? 1 : 0.6, backgroundColor: item.active ? "#fff" : "#f5f5f5" }]}>
             <Card.Title 
                 title={item.name}
                 subtitle={`Đăng ngày: ${new Date(item.created_date).toLocaleDateString()}`}
-                left={(props) => <List.Icon {...props} icon="briefcase-check" />}
-                // right={()=>(
-                //     <Chip selectedColor={item.active ? "green" : "red"} 
-                //         style={{marginRight: 10}}>{item.active ? "Đang mở" : "Đã đóng"}</Chip>
-                // )}
+                left={(props) => <List.Icon {...props} icon={item.active ? "briefcase-check" : "briefcase-off"} 
+                color={item.active ? "#2e7d32" : "#d32f2f"} />}
+                right={() => (
+                <Chip 
+                    mode="flat" 
+                    selectedColor={item.active ? "green" : "red"} 
+                    style={{ marginRight: 10, backgroundColor: 'transparent' }}
+                >
+                    {item.active ? "Đang mở" : "Đã đóng/Đã xóa"}
+                </Chip>
+            )}
             />
             <Card.Content>
                 <Text>Địa điểm: {item.location}</Text>
@@ -84,9 +67,6 @@ const MyJobs=()=>{
                     {screen:"ViewApplications",params:{jobId:item.id}})}>
                     Xem ứng viên
                 </Button>
-                <Button mode="outline" onPress={()=>nav.navigate("Home",
-                    {screen:"PostJobs",params:{jobId:item.id}})}>Chỉnh sửa</Button>
-                <Button mode="outline" onPress={()=>handleDelete(item.id)}>Xóa tin</Button>
             </Card.Actions>
         </Card>
     );

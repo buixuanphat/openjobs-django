@@ -1,4 +1,4 @@
-import { Children, useEffect, useState } from "react"
+import React, { Children, useEffect, useState } from "react"
 import { FlatList, ScrollView, View } from "react-native";
 import { ActivityIndicator, Avatar, Card, Chip, IconButton, List, Searchbar, Text } from "react-native-paper";
 import Apis, { endpoints } from "../utils/Apis";
@@ -6,7 +6,7 @@ import { Image } from "react-native";
 import MyStyles from "../styles/MyStyles";
 import { TouchableOpacity } from "react-native";
 import JobFilter from "./JobFilter";
-import { useNavigation } from "@react-navigation/native";
+import { useFocusEffect, useNavigation } from "@react-navigation/native";
 
 
 const Jobs=({ category_id, name, location, min_salary, working_time_id })=>{
@@ -65,7 +65,6 @@ const Jobs=({ category_id, name, location, min_salary, working_time_id })=>{
         }
     }, [page]);
 
-    
     const loadMore = () => {
         if (page > 0 && !loading && jobs.length>0)
             setPage(page+1);
