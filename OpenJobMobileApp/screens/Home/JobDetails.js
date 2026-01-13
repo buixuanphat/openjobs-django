@@ -7,12 +7,9 @@ import { Button, Card, Chip, Divider, Text } from "react-native-paper";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import Styles from "./Styles";
 import * as DocumentPicker from 'expo-document-picker';
-<<<<<<< HEAD
 import MyButton from "../../components/MyButton";
-=======
 import MyStyles from "../../styles/MyStyles";
 import { Image } from "react-native";
->>>>>>> 387c1f9df2db09eaeab223e66409db6ea06fa7e9
 
 const JobDetails = ({ route }) => {
     const jobId = route.params?.jobId;
@@ -24,11 +21,13 @@ const JobDetails = ({ route }) => {
     const [cvFile, setCvFile] = useState(null);
     const nav = useNavigation();
 
+
     const loadJob = async () => {
         try {
             setLoading(true);
             const res = await Apis.get(endpoints['job-details'](jobId));
             setJob(res.data);
+            console.log("Chi tiết công việc: ", res.data)
         } catch (ex) {
             console.error(ex);
         } finally {
@@ -214,15 +213,26 @@ const JobDetails = ({ route }) => {
                             <ScrollView horizontal showsHorizontalScrollIndicator={false}>
                                 {job.company_images && job.company_images.map((imgUrl, index) => (
                                     <Image
-                                        key={index} 
-                                        source={{ uri: imgUrl }} 
-                                        style={{ width: 100, height: 80, marginRight: 10, borderRadius: 10 }} 
+                                        key={index}
+                                        source={{ uri: imgUrl }}
+                                        style={{ width: 100, height: 80, marginRight: 10, borderRadius: 10 }}
                                     />
                                 ))}
                             </ScrollView>
                         </View>
                     </Card>
-                    <MyButton onPress={() => nav.navigate("Chat")} label="Liên hệ" icon="message-text" />
+                    {user?.role == 'candidate' &&
+                        <View style={{ marginBottom: 50 }} >
+                            <MyButton onPress={() => nav.navigate("Chat", {
+                                employer: {
+                                    id: job.employer.user.id,
+                                    logo: job.employer.logo,
+                                    name: job.employer.company_name
+                                }
+                            })} label="Liên hệ" icon="message-text" />
+                        </View>
+                    }
+
                 </View>
             )}
         </ScrollView>

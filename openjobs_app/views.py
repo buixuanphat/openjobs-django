@@ -15,10 +15,11 @@ from django.conf import settings
 from openjobs.wsgi import application
 from openjobs_app import perms, paginators
 from openjobs_app.models import User, RoleUser, Job, UserEmployer, Application, ApplicationStatus, Category, \
-    WorkingTime, JobWorkingTime, Follow, Employer
+    WorkingTime, Follow, Employer, Employment
 from openjobs_app.perms import isEmployer
 from openjobs_app.serializers import UserSerializer, CandidateRegistrationSerializer, EmployerRegistrationSerializer, \
-    JobSerializer, ApplicationSerializer, CategorySerializer, WorkingTimeSerializer, FollowSerializer
+    JobSerializer, ApplicationSerializer, CategorySerializer, WorkingTimeSerializer, FollowSerializer, \
+    EmployerSerializer
 from django.core.mail import send_mail
 
 
@@ -132,6 +133,10 @@ class JobViewSet(viewsets.ModelViewSet):
         user_emp = UserEmployer.objects.filter(user=self.request.user).first()
         if user_emp:
             serializer.save(employer=user_emp.employer)
+
+
+
+
 
             # Gửi mail cho người theo dõi
             employer = user_emp.employer
@@ -274,6 +279,10 @@ class ApplicationViewSet(mixins.CreateModelMixin,mixins.ListModelMixin,
         if new_status in valid_statuses:
             application.status=new_status
             application.save()
+
+            # Nếu đồng ý thì tạo Employment
+            Employment.objects.create()
+
             return Response({"msg":f"Đã cập nhật trạng thái thành công {application.get_status_display()}"},
                             status=status.HTTP_200_OK)
         return Response({"error":f"Trạng thái không hợp lê!"}, status=status.HTTP_400_BAD_REQUEST)
@@ -284,12 +293,33 @@ class CategoryView(viewsets.ModelViewSet, generics.ListAPIView):
     serializer_class = CategorySerializer
     permission_classes = [permissions.AllowAny]
 
-class WorkingTimeViewSet(viewsets.ReadOnlyModelViewSet):
+class WorkingTimeViewSet(viewsets.ViewSet, generics.CreateAPIView):
+
     queryset = WorkingTime.objects.all()
     serializer_class = WorkingTimeSerializer
-    permission_classes = [permissions.AllowAny]
+    permission_classes = [permissions.IsAuthenticated]
+
+    def perform_create(self, serializer):
+        user = self.request.user
+
+        user_employer = UserEmployer.objects.filter(user=user).first()
+        if not user_employer:
+            raise serializers.ValidationError("Người dùng không thuộc nhà tuyển dụng nào")
+
+        serializer.save(employer=user_employer.employer)
 
 
+class EmployerViewSet(viewsets.ViewSet):
+    queryset = Employer.objects.filter(active=True)
+    serializer_class = EmployerSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    @action(methods=['get'], detail=False, url_path='working-times')
+    def get_working_time(self, request):
+        user=self.request.user
+        employer = UserEmployer.objects.filter(user=user).first().employer
+        working_times = WorkingTime.objects.filter(employer=employer).all()
+        return Response(WorkingTimeSerializer(working_times, many=True).data)
 
 
 

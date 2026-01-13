@@ -3,7 +3,7 @@ from django.conf import settings
 from drf_yasg import openapi
 from rest_framework import serializers
 from openjobs_app.models import User, RoleUser, Employer, UserEmployer, Image, Job, Application, Category, WorkingTime, \
-    Follow, Appreciation
+    Follow, Appreciation, Employment
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -12,7 +12,7 @@ class UserSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ['first_name', 'last_name', 'username', 'password' ,'gender', 'avatar' ,
+        fields = ['id' ,'first_name', 'last_name', 'username', 'password' ,'gender', 'avatar' ,
                   'email', 'phone_number' ,'date_of_birth','role','cv','company_images']
         extra_kwargs = {
             'password': {
@@ -124,19 +124,58 @@ class EmployerRegistrationSerializer(UserSerializer):
                 Image.objects.create(employer=employer,images=image)
         return user
 
+class WorkingTimeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = WorkingTime
+        fields = ['id', 'name', 'start_time', 'end_time']
+
+
+class EmployerWithUserSerializer(serializers.ModelSerializer):
+    user = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Employer
+        fields = ['id', 'company_name', 'logo', 'address', 'tax_code', 'user']
+
+    def get_user(self, employer):
+        user_emp = UserEmployer.objects.filter(employer=employer).select_related('user').first()
+        if not user_emp:
+            return None
+        return {
+            'id': user_emp.user.id,
+            'username': user_emp.user.username,
+            'email': user_emp.user.email,
+            'avatar': user_emp.user.avatar.url if user_emp.user.avatar else None,
+        }
+
+    def to_representation(self, instance):
+        data=super().to_representation(instance)
+        if instance.logo:
+            data['logo'] = instance.logo.url
+        return data
+
+
+
+
 class JobSerializer(serializers.ModelSerializer):
-    employer_name = serializers.CharField(source='employer.company_name', read_only=True)
-    employer_logo=serializers.SerializerMethodField()
-    working_times=serializers.SerializerMethodField()
-    categories=serializers.SerializerMethodField()
+    employer = EmployerWithUserSerializer(read_only=True)
+    categories = serializers.SerializerMethodField()
     company_images = serializers.SerializerMethodField()
 
     class Meta:
         model = Job
-        fields = ['id','name','active','description','skills','min_salary','max_salary','location',
-                  'map_url', 'payment_type','deadline', 'employer', 'created_date',
-                  'employer_name','working_times','categories','employer_logo','company_images']
-        read_only_fields = ['employer','created_date']
+        fields = [
+            'id', 'name', 'description', 'skills',
+            'min_salary', 'max_salary', 'location',
+            'map_url', 'payment_type', 'deadline',
+            'created_date', 'duration',
+            'employer', 'categories', 'company_images'
+        ]
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        data['shifts'] = WorkingTimeSerializer(instance.shifts.all(),many=True).data
+        return data
 
     def get_working_times(self, obj):
         slots=obj.job_time_slots.all()
@@ -187,10 +226,7 @@ class CategorySerializer(serializers.ModelSerializer):
         model = Category
         fields = ['id', 'name']
 
-class WorkingTimeSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = WorkingTime
-        fields = ['id', 'name', 'start_time', 'end_time']
+
 
 
 class FollowSerializer(serializers.ModelSerializer):
@@ -203,3 +239,14 @@ class AppreciationSerializer(serializers.ModelSerializer):
     class Meta:
         model = Appreciation
         field = ['id' , 'employer', 'rating', 'content', 'user']
+
+
+class EmploymentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Employment
+        field = ['start_date', 'end_date', 'status', 'user', 'job']
+
+class EmployerSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Employer
+        field = ['id', 'company_name', 'logo', 'description', 'address', 'tax_code', 'created_date', 'updated_date']

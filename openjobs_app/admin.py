@@ -1,7 +1,7 @@
 from django.contrib import admin
 from oauth2_provider.models import Application
 
-from openjobs_app.models import User, Employer, Image, Job, JobCategory, WorkingTime, JobWorkingTime, Category
+from openjobs_app.models import User, Employer, Image, Job, JobCategory, WorkingTime, Category
 
 
 class UserAdmin(admin.ModelAdmin):
@@ -19,9 +19,6 @@ admin_site.register(Employer)
 admin_site.register(Image)
 admin_site.register(Job)
 admin_site.register(JobCategory)
-admin_site.register(JobWorkingTime)
 admin_site.register(WorkingTime)
 admin_site.register(Category)
-
-
 admin_site.register(Application)

@@ -1,8 +1,10 @@
 import datetime
+from email.policy import default
 
 from cloudinary.models import CloudinaryField
 from django.contrib.auth.models import AbstractUser
 from django.db import models
+from django.db.models import ManyToManyField
 
 
 class ApplicationStatus(models.TextChoices):
@@ -11,6 +13,7 @@ class ApplicationStatus(models.TextChoices):
     ACCEPTED = 'accepted', 'Accepted'
     REJECTED = 'rejected', 'Rejected'
     WITHDRAWN = 'withdrawn', 'Withdrawn'
+
 
 
 class EmploymentStatus(models.TextChoices):
@@ -36,6 +39,13 @@ class RoleUser(models.TextChoices):
 class GenderUser(models.TextChoices):
     MALE = 'male', 'Male'
     FEMALE = 'female', 'Female'
+
+class Duration(models.TextChoices):
+    ONE_MONTH = '1_month', '1 tháng'
+    THREE_MONTHS = '3_months', '3 tháng'
+    SIX_MONTHS = '6_months', '6 tháng'
+    ONE_YEAR = '1_year', '1 năm'
+    TWO_YEARS = '2_years', '2 năm'
 
 
 class User(AbstractUser):
@@ -82,6 +92,17 @@ class UserEmployer(BaseModel):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='managed_employers')
 
 
+class WorkingTime(BaseModel):
+    name = models.CharField(max_length=255)
+    start_time = models.TimeField()
+    end_time = models.TimeField()
+    employer = models.ForeignKey(Employer, on_delete=models.CASCADE, related_name='working_times_templates')
+
+    def __str__(self):
+        return self.name
+
+
+
 class Job(BaseModel):
     name = models.CharField(max_length=255)
     description = models.TextField()
@@ -95,6 +116,8 @@ class Job(BaseModel):
     created_date = models.DateTimeField(auto_now_add=True)
     updated_date = models.DateTimeField(auto_now=True)
     employer = models.ForeignKey(Employer, on_delete=models.CASCADE, related_name='job_post')
+    duration = models.CharField(max_length=30 ,choices=Duration.choices, default=Duration.THREE_MONTHS)
+    shifts = ManyToManyField(WorkingTime, related_name='shifts')
 
     def __str__(self):
         return self.name
@@ -130,23 +153,9 @@ class Employment(BaseModel):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='employments_history')
     job = models.ForeignKey(Job, on_delete=models.PROTECT, related_name='job_employments_records')
 
-
-class WorkingTime(BaseModel):
-    name = models.CharField(max_length=255)
-    start_time = models.TimeField()
-    end_time = models.TimeField()
-    employer = models.ForeignKey(Employer, on_delete=models.CASCADE, related_name='working_times_templates')
-
-    def __str__(self):
-        return self.name
-
-
-class JobWorkingTime(BaseModel):
-    job = models.ForeignKey(Job, on_delete=models.CASCADE, related_name='job_time_slots')
-    working_time = models.ForeignKey(WorkingTime, on_delete=models.PROTECT, related_name='links_jobs')
-
     class Meta:
-        unique_together = ('job', 'working_time')
+        unique_together = ('user', 'job')
+
 
 
 class Category(BaseModel):
