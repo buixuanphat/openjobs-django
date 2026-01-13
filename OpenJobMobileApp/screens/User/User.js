@@ -87,7 +87,7 @@
                         <List.Item
                             title="Thông tin cá nhân"
                             left={props => <List.Icon {...props} icon="account-edit" />}
-                            onPress={() => {/* Chuyển đến trang Edit Profile */}}
+                            onPress={() => nav.navigate('Home',{screen:'UserDetails'})}
                         />
                         <Divider/>
                         <List.Item
@@ -101,12 +101,21 @@
                 <Card style={Styles.card}>
                     <List.Section>
                         <List.Subheader style={Styles.title}>Hoạt động</List.Subheader>
-                        <List.Item
+                        {user?.role==='candidate' ?(
+                            <List.Item
                             title="Lịch Sử Ứng Tuyển"
                             description="Theo dõi trạng thái các công việc đã nộp"
                             left={props => <List.Icon {...props} icon="history" color="#1a73e8" />}
                             onPress={() => nav.navigate('Home',{screen:'Applications'})} 
                         />
+                        ):user?.role==='employer'?(
+                            <List.Item
+                            title="Lịch sử Tin Đăng"
+                            description="Xem lại các tin từng đăng"
+                            left={props => <List.Icon {...props} icon="history" color="#1a73e8" />}
+                            onPress={() => nav.navigate('Home',{screen:'JobHistory'})} 
+                        />
+                        ): null}
                     </List.Section>
                 </Card>
                 <Button mode="outlined" icon="logout" onPress={logout}>Đăng xuất</Button>

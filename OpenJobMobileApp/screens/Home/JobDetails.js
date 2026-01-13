@@ -7,7 +7,12 @@ import { Button, Card, Chip, Divider, Text } from "react-native-paper";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import Styles from "./Styles";
 import * as DocumentPicker from 'expo-document-picker';
+<<<<<<< HEAD
 import MyButton from "../../components/MyButton";
+=======
+import MyStyles from "../../styles/MyStyles";
+import { Image } from "react-native";
+>>>>>>> 387c1f9df2db09eaeab223e66409db6ea06fa7e9
 
 const JobDetails = ({ route }) => {
     const jobId = route.params?.jobId;
@@ -186,7 +191,7 @@ const JobDetails = ({ route }) => {
                             <View style={Styles.row}>
                                 <Chip icon="cash" style={Styles.chip}>{job.min_salary}-{job.max_salary}</Chip>
                                 <Chip icon="map-marker" style={Styles.chip}>{job.location}</Chip>
-                                <Chip icon="clock" style={Styles.chip}>Hạn: {job.duration} tháng</Chip>
+                                <Chip icon="clock" style={Styles.chip}>Hạn: {job.deadline}</Chip>
                                 <Chip icon="calendar-check" style={Styles.chip}>Trả lương: {job.payment_type}</Chip>
                                 <TouchableOpacity onPress={openGoogleMaps}>
                                     <Chip icon="google-maps" style={Styles.chip}>Xem vị trí map</Chip>
@@ -203,6 +208,18 @@ const JobDetails = ({ route }) => {
                             <Text style={Styles.descriptionText}>{job.description}</Text>
 
                             {renderApplySection()}
+                        </View>
+                        <View style={Styles.descriptionContainer}>
+                            <Text style={Styles.sectionTitleJobDetail}>Ảnh môi trường làm việc:</Text>
+                            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                                {job.company_images && job.company_images.map((imgUrl, index) => (
+                                    <Image
+                                        key={index} 
+                                        source={{ uri: imgUrl }} 
+                                        style={{ width: 100, height: 80, marginRight: 10, borderRadius: 10 }} 
+                                    />
+                                ))}
+                            </ScrollView>
                         </View>
                     </Card>
                     <MyButton onPress={() => nav.navigate("Chat")} label="Liên hệ" icon="message-text" />

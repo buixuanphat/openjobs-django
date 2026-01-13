@@ -20,7 +20,8 @@ import Applications from './screens/Home/Applications';
 import PostJobs from './screens/Home/PostJobs';
 import ViewApplications from './screens/Home/ViewApplications';
 import MyJobs from './screens/Home/MyJobs';
-import Chat from './screens/Home/Chat';
+import UserDetails from './screens/User/UserDetails';
+import JobHistory from './screens/Home/JobHistory';
 
 
 const Stack = createNativeStackNavigator();
@@ -28,14 +29,13 @@ const Stack = createNativeStackNavigator();
 const StackNavigatior = () => {
   return (
     <Stack.Navigator>
-      <Stack.Screen name="Job" component={Home} options={{ title: "Trang Chủ" }} />
-
-      <Stack.Screen name="MainTabs" component={TabNavigator} options={{ headerShown: false }} />
-
-      <Stack.Screen name="JobDetails" component={JobDetails} options={{ title: "Chi tiết tin tuyển dụng" }} />
-      <Stack.Screen name="ViewApplications" component={ViewApplications} options={{ title: "Danh sách ứng viên" }} />
-      <Stack.Screen name="Applications" component={Applications} options={{ title: "Lịch sử tuyển dụng" }} />
-      <Stack.Screen name="PostJobs" component={PostJobs} options={{ title: "Đăng tin ứng tuyển" }} />
+      <Stack.Screen name="Job" component={Home} options={{title:"Trang Chủ"}}/>
+      <Stack.Screen name="UserDetails" component={UserDetails} options={{title:"Thông tin cá nhân"}}/>
+      <Stack.Screen name="JobDetails" component={JobDetails} options={{title:"Chi tiết tin tuyển dụng"}}/>
+      <Stack.Screen name="ViewApplications" component={ViewApplications} options={{title:"Danh sách ứng viên"}}/>
+      <Stack.Screen name="Applications" component={Applications} options={{title:"Lịch sử tuyển dụng"}}/>
+      <Stack.Screen name="JobHistory" component={JobHistory} options={{title:"Lịch sử tin đăng tuyển"}}/>
+      <Stack.Screen name="PostJobs" component={PostJobs} options={{title:"Đăng tin ứng tuyển"}}/>
     </Stack.Navigator>
   );
 }

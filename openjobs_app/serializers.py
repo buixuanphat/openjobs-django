@@ -8,16 +8,29 @@ from openjobs_app.models import User, RoleUser, Employer, UserEmployer, Image, J
 
 class UserSerializer(serializers.ModelSerializer):
     # avatar = serializers.ImageField(required=False,allow_null=True)
+    company_images = serializers.SerializerMethodField()
 
     class Meta:
         model = User
-        fields = ['first_name', 'last_name', 'username', 'password' ,'gender', 'avatar' , 'email', 'phone_number' ,'date_of_birth','role','cv']
+        fields = ['first_name', 'last_name', 'username', 'password' ,'gender', 'avatar' ,
+                  'email', 'phone_number' ,'date_of_birth','role','cv','company_images']
         extra_kwargs = {
             'password': {
                 'write_only': True,
                 'style': {'input_type': 'password'}
             }
         }
+    def get_company_images(self, obj):
+        if obj.id and obj.role == RoleUser.EMPLOYER:
+            try:
+                user_emp = UserEmployer.objects.filter(user=obj).first()
+                if user_emp and hasattr(user_emp, 'employer') and user_emp.employer:
+                    images = Image.objects.filter(employer=user_emp.employer)
+                    return [img.images.url for img in images if img.images]
+            except Exception as e:
+                print(f"Lỗi lấy ảnh công ty: {e}")
+                return []
+        return []
 
     def to_representation(self, instance):
         data = super().to_representation(instance)
@@ -33,6 +46,12 @@ class UserSerializer(serializers.ModelSerializer):
                 data['cv'] = str(instance.cv)
         else:
             data['cv'] = None
+        if instance.role == RoleUser.EMPLOYER:
+            user_emp = UserEmployer.objects.filter(user=instance).first()
+            if user_emp and user_emp.employer:
+                data['company_name'] = user_emp.employer.company_name
+                data['tax_code'] = user_emp.employer.tax_code
+                data['address'] = user_emp.employer.address
         data['is_active'] = instance.is_active
         return data
 
@@ -110,12 +129,13 @@ class JobSerializer(serializers.ModelSerializer):
     employer_logo=serializers.SerializerMethodField()
     working_times=serializers.SerializerMethodField()
     categories=serializers.SerializerMethodField()
+    company_images = serializers.SerializerMethodField()
 
     class Meta:
         model = Job
-        fields = ['id','name','description','skills','min_salary','max_salary','location',
+        fields = ['id','name','active','description','skills','min_salary','max_salary','location',
                   'map_url', 'payment_type','deadline', 'employer', 'created_date',
-                  'employer_name','working_times','categories','employer_logo']
+                  'employer_name','working_times','categories','employer_logo','company_images']
         read_only_fields = ['employer','created_date']
 
     def get_working_times(self, obj):
@@ -131,7 +151,11 @@ class JobSerializer(serializers.ModelSerializer):
             return obj.employer.logo.url
         return None
 
-
+    def get_company_images(self, obj):
+        if obj.employer:
+            images = Image.objects.filter(employer=obj.employer)
+            return [img.images.url for img in images if img.images]
+        return []
 
 
 class ApplicationSerializer(serializers.ModelSerializer):
