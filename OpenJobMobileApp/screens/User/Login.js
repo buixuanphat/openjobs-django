@@ -1,4 +1,4 @@
-import { View,Text, ScrollView, Alert } from "react-native";
+import { View, Text, ScrollView, Alert } from "react-native";
 import MyStyles from "../../styles/MyStyles";
 import { Button, HelperText, TextInput } from "react-native-paper";
 import { useContext, useState } from "react";
@@ -7,24 +7,25 @@ import { MyUserContext } from "../../utils/MyContexts";
 import { OAUTH2_CONFIG } from "../../AppConfig";
 import Apis, { authApis, endpoints } from "../../utils/Apis";
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import Constants from "expo-constants";
 
-const Login=({route})=>{
+const Login = ({ route }) => {
 
-    const info=[{
-        title:"Tên đăng nhập",
-        field:"username",
-        icon:"account"
-    },{
-        title:"Mật khẩu",
-        field:"password",
-        secureTextEntry:true,
-        icon:"eye"
+    const info = [{
+        title: "Tên đăng nhập",
+        field: "username",
+        icon: "account"
+    }, {
+        title: "Mật khẩu",
+        field: "password",
+        secureTextEntry: true,
+        icon: "eye"
     }];
 
     const [user, setUser] = useState({});
     const [errMsg, setErrMsg] = useState();
     const [loading, setLoading] = useState(false);
-    const [,dispatch] = useContext(MyUserContext);
+    const [, dispatch] = useContext(MyUserContext);
     const nav = useNavigation();
 
     const validate = () => {
@@ -42,24 +43,27 @@ const Login=({route})=>{
         return true;
     }
 
+
+
     const login = async () => {
         if (validate()) {
             try {
                 setLoading(true);
 
-                const params = new URLSearchParams();
-                params.append('username', user.username);
-                params.append('password', user.password);
-                for (let k in OAUTH2_CONFIG) params.append(k, OAUTH2_CONFIG[k]);
-                let res = await Apis.post(endpoints['login'], params.toString(), {
-                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
-                });
+                const body =
+                    `username=${encodeURIComponent(user.username)}` +
+                    `&password=${encodeURIComponent(user.password)}` +
+                    `&grant_type=password` +
+                    `&client_id=${Constants.expoConfig.extra.CLIENT_ID}` +
+                    `&client_secret=${Constants.expoConfig.extra.CLIENT_SECRET}`;
+
+                let res = await Apis.post(endpoints['login'], body);
 
 
                 // let res = await Apis.post(endpoints['login'], {
                 //     ...user,
                 //     ...OAUTH2_CONFIG
-                    
+
                 // });
                 console.info(res.data);
                 // Alert.alert("Thông báo","Đăng nhập thành công!");
@@ -77,15 +81,17 @@ const Login=({route})=>{
 
                         const next = route.params?.next;
                         if (next)
-                            nav.navigate(next||"Home");
+                            nav.navigate(next || "Home");
 
                     } catch (err) {
                         console.info("Lỗi lấy User:", err);
                         setErrMsg("Đăng nhập thành công nhưng không lấy được thông tin người dùng!");
-            }}, 500);
-                
+                    }
+                }, 500);
+
             } catch (ex) {
                 console.info(ex);
+                console.log(JSON.stringify(ex))
                 if (ex.response && ex.response.data) {
                     if (ex.response.data.error === "invalid_grant") {
                         Alert.alert(
@@ -95,7 +101,7 @@ const Login=({route})=>{
                     } else {
                         setErrMsg("Lỗi hệ thống xác thực!");
                     }
-                }else
+                } else
                     setErrMsg("Tài khoản hoặc mật khẩu không chính xác!");
             }
             finally {
@@ -108,23 +114,23 @@ const Login=({route})=>{
     return (
         <View style={MyStyles.padding}>
             <Text style={MyStyles.title}>ĐĂNG NHẬP NGƯỜI DÙNG</Text>
-             <HelperText type="error" visible={errMsg}>
+            <HelperText type="error" visible={errMsg}>
                 {errMsg}
             </HelperText>
 
             {info.map(i => <TextInput key={i.field} style={MyStyles.margin}
-                            label={i.title}
-                            secureTextEntry={i.secureTextEntry}
-                            right={<TextInput.Icon icon={i.icon} />}
-                            value={user[i.field]}
-                            onChangeText={t => setUser({...user, [i.field]: t})} />)}
+                label={i.title}
+                secureTextEntry={i.secureTextEntry}
+                right={<TextInput.Icon icon={i.icon} />}
+                value={user[i.field]}
+                onChangeText={t => setUser({ ...user, [i.field]: t })} />)}
 
-          
-            {user.avatar && <Image  source={{uri: user.avatar.uri}} width={250} style={[MyStyles.avatar, MyStyles.margin]} />}
+
+            {user.avatar && <Image source={{ uri: user.avatar.uri }} width={250} style={[MyStyles.avatar, MyStyles.margin]} />}
 
             <Button loading={loading} disabled={loading} mode="contained" icon="account" onPress={login}>Đăng nhập</Button>
         </View>
-            
-        );
-    }
-    export default Login;
+
+    );
+}
+export default Login;

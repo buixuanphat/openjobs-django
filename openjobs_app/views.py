@@ -15,10 +15,11 @@ from django.conf import settings
 from openjobs.wsgi import application
 from openjobs_app import perms, paginators
 from openjobs_app.models import User, RoleUser, Job, UserEmployer, Application, ApplicationStatus, Category, \
-    WorkingTime, JobWorkingTime
+    WorkingTime, JobWorkingTime, Follow, Employer
 from openjobs_app.perms import isEmployer
 from openjobs_app.serializers import UserSerializer, CandidateRegistrationSerializer, EmployerRegistrationSerializer, \
-    JobSerializer, ApplicationSerializer, CategorySerializer, WorkingTimeSerializer
+    JobSerializer, ApplicationSerializer, CategorySerializer, WorkingTimeSerializer, FollowSerializer
+from django.core.mail import send_mail
 
 
 class CandidateRegistrationView(generics.CreateAPIView):
@@ -131,8 +132,28 @@ class JobViewSet(viewsets.ModelViewSet):
         user_emp_link = UserEmployer.objects.filter(user=self.request.user).first()
         if user_emp_link:
             serializer.save(employer=user_emp_link.employer)
+
+            # Gửi mail cho người theo dõi
+            employer = user_emp_link.employer
+
+            followers = Follow.objects.filter(employer=employer)
+
+            emails = []
+            for f in followers:
+                    emails.append(f.user.email)
+            print(self.request.data)
+            print(emails)
+            send_mail(
+                subject='Test mail',
+                message=self.request.data.get('name'),
+                from_email=None,
+                recipient_list=emails,
+                fail_silently=False,
+            )
+
         else:
             raise serializers.ValidationError({"detail": "Lỗi xác thực Employer"})
+
     def get_queryset(self):
         queryset=Job.objects.filter(active=True)
 
@@ -156,6 +177,19 @@ class JobViewSet(viewsets.ModelViewSet):
         if working_time:
             queryset = queryset.filter(job_time_slots__working_time__name__icontains=working_time)
         return queryset
+
+
+    # Follow nhà tuyển dụng
+    @action(methods=['post'],detail=True,url_path='follow', permission_classes=[permissions.IsAuthenticated])
+    def follow (self, request, pk):
+        employer= self.get_object().employer
+        user = request.user
+        follow = Follow.objects.filter(user=user,employer=employer).first()
+        if follow:
+            follow.delete()
+        else:
+            follow = Follow.objects.create(user=user,employer=employer)
+        return Response(FollowSerializer(follow).data, status=status.HTTP_201_CREATED)
 
 
 class ApplicationViewSet(mixins.CreateModelMixin,mixins.ListModelMixin,
@@ -218,6 +252,8 @@ class WorkingTimeViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = WorkingTime.objects.all()
     serializer_class = WorkingTimeSerializer
     permission_classes = [permissions.AllowAny]
+
+
 
 
 

@@ -2,7 +2,9 @@ from cloudinary.models import CloudinaryField
 from django.conf import settings
 from drf_yasg import openapi
 from rest_framework import serializers
-from openjobs_app.models import User, RoleUser, Employer, UserEmployer, Image, Job, Application, Category,WorkingTime
+from openjobs_app.models import User, RoleUser, Employer, UserEmployer, Image, Job, Application, Category, WorkingTime, \
+    Follow, Appreciation
+
 
 class UserSerializer(serializers.ModelSerializer):
     # avatar = serializers.ImageField(required=False,allow_null=True)
@@ -165,3 +167,15 @@ class WorkingTimeSerializer(serializers.ModelSerializer):
     class Meta:
         model = WorkingTime
         fields = ['id', 'name', 'start_time', 'end_time']
+
+
+class FollowSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Follow
+        fields = ['id', 'user', 'employer']
+
+
+class AppreciationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Appreciation
+        field = ['id' , 'employer', 'rating', 'content', 'user']

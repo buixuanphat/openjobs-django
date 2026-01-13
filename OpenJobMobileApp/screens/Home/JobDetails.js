@@ -7,6 +7,7 @@ import { Button, Card, Chip, Divider, Text } from "react-native-paper";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import Styles from "./Styles";
 import * as DocumentPicker from 'expo-document-picker';
+import MyButton from "../../components/MyButton";
 
 const JobDetails = ({ route }) => {
     const jobId = route.params?.jobId;
@@ -14,7 +15,7 @@ const JobDetails = ({ route }) => {
     const [loading, setLoading] = useState(true);
     const [user] = useContext(MyUserContext);
     const [applied, setApplied] = useState(false);
-    const [showApply,setShowApply]=useState(false);
+    const [showApply, setShowApply] = useState(false);
     const [cvFile, setCvFile] = useState(null);
     const nav = useNavigation();
 
@@ -73,10 +74,10 @@ const JobDetails = ({ route }) => {
                     name: cvFile.name,
                     type: "application/pdf"
                 });
-            }else if(user?.cv){
-                formData.append("cv",user.cv);
-            }else{
-                Alert.alert("Thông báo","Vui long chọn file CV!");
+            } else if (user?.cv) {
+                formData.append("cv", user.cv);
+            } else {
+                Alert.alert("Thông báo", "Vui long chọn file CV!");
                 setLoading(false);
                 return;
             }
@@ -107,70 +108,70 @@ const JobDetails = ({ route }) => {
         if (user?.role !== 'candidate') return null;
 
         if (!showApply) {
-        return (
-            <View style={Styles.margin}>
-                <Divider style={{ marginVertical: 15 }} />
-                <Button 
-                    style={Styles.buttonApply}
-                    mode="contained" 
-                    icon="send" 
-                    onPress={() => setShowApply(true)} 
-                    disabled={applied}
-                >
-                    {applied ? "BẠN ĐÃ NỘP HỒ SƠ" : "BẮT ĐẦU ỨNG TUYỂN"}
-                </Button>
-            </View>
+            return (
+                <View style={Styles.margin}>
+                    <Divider style={{ marginVertical: 15 }} />
+                    <Button
+                        style={Styles.buttonApply}
+                        mode="contained"
+                        icon="send"
+                        onPress={() => setShowApply(true)}
+                        disabled={applied}
+                    >
+                        {applied ? "BẠN ĐÃ NỘP HỒ SƠ" : "BẮT ĐẦU ỨNG TUYỂN"}
+                    </Button>
+                </View>
             );
         }
 
         return (
-        <View style={Styles.applyContainer}>
-            <View>
-                <Text style={Styles.sectionTitle}>Hồ sơ ứng tuyển</Text>
-                <TouchableOpacity onPress={() => setShowApply(false)}>
-                    <Text>Thu gọn</Text>
-                </TouchableOpacity>
-            </View>
-            
-            <Divider />
-            
-            {user?.cv && !cvFile ? (
+            <View style={Styles.applyContainer}>
                 <View>
-                    <Text style={Styles.infoText}>
-                        Hệ thống sẽ dùng CV mặc định của bạn.
-                    </Text>
-                    <Button mode="contained" onPress={handleApply} disabled={applied}>
-                        NỘP CV TRONG PROFILE
-                    </Button>
-                    <Button mode="text" onPress={pickerDocument} style={Styles.margin}>
-                        Hoặc chọn file PDF khác?
-                    </Button>
+                    <Text style={Styles.sectionTitle}>Hồ sơ ứng tuyển</Text>
+                    <TouchableOpacity onPress={() => setShowApply(false)}>
+                        <Text>Thu gọn</Text>
+                    </TouchableOpacity>
                 </View>
-            ) : (
-                <View>
-                    <Button 
-                        style={Styles.buttonUpload}
-                        mode="outlined" 
-                        icon="file-pdf-box" 
-                        onPress={pickerDocument}
-                    >
-                        {cvFile ? `File: ${cvFile.name}` : "CHỌN FILE CV (PDF)"}
-                    </Button>
-                    
-                    {cvFile && (
-                        <Button mode="contained" onPress={handleApply} disabled={applied}>
-                            XÁC NHẬN NỘP FILE NÀY
-                        </Button>
-                    )}
-                    {!cvFile && !user?.cv && (
-                        <Text style={Styles.warningText}>
-                            Vui lòng chọn file CV để ứng tuyển
+
+                <Divider />
+
+                {user?.cv && !cvFile ? (
+                    <View>
+                        <Text style={Styles.infoText}>
+                            Hệ thống sẽ dùng CV mặc định của bạn.
                         </Text>
-                    )}
-                </View>
-            )}
-        </View>
-    );
+                        <Button mode="contained" onPress={handleApply} disabled={applied}>
+                            NỘP CV TRONG PROFILE
+                        </Button>
+                        <Button mode="text" onPress={pickerDocument} style={Styles.margin}>
+                            Hoặc chọn file PDF khác?
+                        </Button>
+                    </View>
+                ) : (
+                    <View>
+                        <Button
+                            style={Styles.buttonUpload}
+                            mode="outlined"
+                            icon="file-pdf-box"
+                            onPress={pickerDocument}
+                        >
+                            {cvFile ? `File: ${cvFile.name}` : "CHỌN FILE CV (PDF)"}
+                        </Button>
+
+                        {cvFile && (
+                            <Button mode="contained" onPress={handleApply} disabled={applied}>
+                                XÁC NHẬN NỘP FILE NÀY
+                            </Button>
+                        )}
+                        {!cvFile && !user?.cv && (
+                            <Text style={Styles.warningText}>
+                                Vui lòng chọn file CV để ứng tuyển
+                            </Text>
+                        )}
+                    </View>
+                )}
+            </View>
+        );
     };
 
     return (
@@ -196,7 +197,7 @@ const JobDetails = ({ route }) => {
                             <Text style={Styles.sectionTitleJobDetail}>Skills</Text>
                             <Divider style={{ marginBottom: 10 }} />
                             <Text style={Styles.descriptionText}>{job.skills}</Text>
-                            
+
                             <Text style={Styles.sectionTitleJobDetail}>Mô tả công việc</Text>
                             <Divider style={{ marginBottom: 10 }} />
                             <Text style={Styles.descriptionText}>{job.description}</Text>
@@ -204,6 +205,7 @@ const JobDetails = ({ route }) => {
                             {renderApplySection()}
                         </View>
                     </Card>
+                    <MyButton onPress={() => nav.navigate("Chat")} label="Liên hệ" icon="message-text" />
                 </View>
             )}
         </ScrollView>

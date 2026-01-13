@@ -25,6 +25,10 @@
     "web": {
       "favicon": "./assets/favicon.png"
     },
+    "extra": {
+      "CLIENT_ID": "SmLtbIKQLZLiYOZgsOxd3RoMyjjeM1NJHPLkW529",
+      "CLIENT_SECRET": "HibpcvIy2N4Rie1sN4yEX9nHkFthCKTKa8T7PQ3UQi7fE734Xfxq7vElgsXo9naA35TRyr3vvrv9xy1QXzcXCjDEsSpozNScZ3CaUmfcKa47HsAYbYDJm2NThrQojcaM"
+    },
     "plugins": [
       "@react-native-community/datetimepicker"
     ]
