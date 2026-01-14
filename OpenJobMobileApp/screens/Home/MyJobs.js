@@ -3,8 +3,9 @@ import { useEffect, useState } from "react";
 import { authApis, endpoints } from "../../utils/Apis";
 import { ActivityIndicator, Button, Card, Chip, Divider, List } from "react-native-paper";
 import MyStyles from "../../styles/MyStyles";
-import { FlatList, RefreshControl, View,Text, Alert } from "react-native";
+import { FlatList, RefreshControl, View,Text, Alert, TouchableOpacity } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import Styles from "./Styles";
 
 const MyJobs=()=>{
     const [jobs,setJobs]=useState([]);
@@ -62,38 +63,48 @@ const MyJobs=()=>{
     };
 
     const renderItem=({item})=>(
-        <Card style={MyStyles.margin}>
-            <Card.Title 
-                title={item.name}
-                subtitle={`Đăng ngày: ${new Date(item.created_date).toLocaleDateString()}`}
-                left={(props) => <List.Icon {...props} icon="briefcase-check" />}
-                // right={()=>(
-                //     <Chip selectedColor={item.active ? "green" : "red"} 
-                //         style={{marginRight: 10}}>{item.active ? "Đang mở" : "Đã đóng"}</Chip>
-                // )}
-            />
-            <Card.Content>
-                <Text>Địa điểm: {item.location}</Text>
-                <Text>Lương: {item.min_salary}tr - {item.max_salary}tr</Text>
-            </Card.Content>
-            <Divider style={{marginVertical: 10}} />
-            <Card.Actions>
-                <Button mode="outline" onPress={()=>nav.navigate("Home",
-                    {screen:"JobDetails",params:{jobId:item.id}})}>Chi tiết</Button>
-                <Button mode="outline" icon="account-search" onPress={()=>nav.navigate("Home",
-                    {screen:"ViewApplications",params:{jobId:item.id}})}>
-                    Xem ứng viên
-                </Button>
-                <Button mode="outline" onPress={()=>nav.navigate("Home",
-                    {screen:"PostJobs",params:{jobId:item.id}})}>Chỉnh sửa</Button>
-                <Button mode="outline" onPress={()=>handleDelete(item.id)}>Xóa tin</Button>
-            </Card.Actions>
+       <TouchableOpacity
+            activeOpacity={0.7}
+            onPress={() => nav.navigate("Home", { screen: "JobDetails", params: { jobId: item.id } })}>
+            <Card style={Styles.margin}>
+                <Card.Title 
+                    title={item.name}
+                    subtitle={`Đăng ngày: ${new Date(item.created_date).toLocaleDateString()}`}
+                    left={(props) => <List.Icon {...props} icon="briefcase-check" />}
+                />
+                <Card.Content>
+                    <Text>Địa điểm: {item.location}</Text>
+                    <Text>Lương: {item.min_salary}tr - {item.max_salary}tr</Text>
+                </Card.Content>
+                <Divider style={{marginVertical: 10}} />
+                <Card.Actions style={{ flexWrap: 'wrap', justifyContent: 'flex-start' }}>
+                    <Button 
+                        compact 
+                        mode="outlined" 
+                        icon="account-search" 
+                        style={{ margin: 2 }} 
+                        onPress={() => nav.navigate("Home", { screen: "ViewApplications", params: { jobId: item.id } })}
+                    >Xem ứng viên</Button>
+                    <Button 
+                        compact 
+                        mode="outlined" 
+                        style={{ margin: 2 }} 
+                        onPress={() => nav.navigate("Home", { screen: "PostJobs", params: { jobId: item.id } })}
+                    >Sửa</Button>
+                    <Button 
+                        compact 
+                        mode="outlined" 
+                        style={{ margin: 2 }}
+                        onPress={() => handleDelete(item.id)}
+                    >Xóa</Button>
+                </Card.Actions>
         </Card>
+       </TouchableOpacity>
     );
 
     return(
-        <View style={MyStyles.container}>
-            <Text style={MyStyles.title}>QUẢN LÝ TIN ĐĂNG</Text>
+        <View style={[Styles.padding, { flex: 1, marginBottom: 20 }]}>
+            <Text style={Styles.formTitle}>QUẢN LÝ TIN ĐĂNG</Text>
             {loading && !refreshing?(
                 <ActivityIndicator />
             ):(
@@ -102,7 +113,6 @@ const MyJobs=()=>{
                     renderItem={renderItem}
                     refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh}/>}
                 />
-               
             )}
         </View>
     );

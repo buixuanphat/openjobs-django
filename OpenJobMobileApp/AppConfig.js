@@ -1,5 +1,5 @@
 export const OAUTH2_CONFIG ={
-    client_id: 'xIxeTmq39UZs9Lx8wiXTvU1W3hNN2RI0b5e8jSP5',
-    client_secret: 'Xv7dEFnlWXFYiwnsWGm8tFqoY144Ljv2JFye2L3kuBURu9tPMXA4QmXFDyVNT5MjiDxib5kYhnbBw8QHJLowvVkEG0jtFvq5EN55CUPDln4rTY88HNmWTx4QLmkOvZla',
+    client_id: 'Fwt1mCxFJTMVbnHgWudUrCbiiNU3nc1vxq4DnKe9',
+    client_secret: 'iYii2BF67clPGYMWyDOVKUo4JeC4KcCBlSvXQsjUA53XGqYGo0F3P0P4hFgIq6QXvY6v8Cy9H0DuKTxbMOLihOzzAVBcu3PViijybbT7FUPnJ8xJyYLGO8xDkdiHOmWK',
     grant_type: 'password'
 };

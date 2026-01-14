@@ -47,7 +47,7 @@ export default StyleSheet.create({
         marginVertical: 10,
     },
     title: {
-        fontSize: 22,
+        fontSize: 20,
         fontWeight: "bold",
         color: "#2c3e50",
     },
@@ -99,7 +99,6 @@ export default StyleSheet.create({
         marginBottom: 10,
     },
 
-    // --- STYLES CHO DANH SÁCH HỒ SƠ (APPLICATIONS) ---
     statusBadge: {
         alignSelf: 'flex-start',
         borderRadius: 20,
@@ -111,4 +110,51 @@ export default StyleSheet.create({
         color: '#7f8c8d',
         fontSize: 16,
     },
+
+    
+    padding: {
+        padding: 16,
+        backgroundColor: "#fff",
+    },
+    formTitle: {
+        fontSize: 24,
+        fontWeight: "bold",
+        color: "#1a73e8",
+        textAlign: "center",
+        marginBottom: 20,
+        textTransform: 'uppercase',
+    },
+    inputMargin: {
+        marginBottom: 12,
+    },
+    salaryRow: {
+        flexDirection: "row", 
+        justifyContent: "space-between",
+        marginBottom: 12,
+        gap:15
+    },
+    salaryInput: {
+        flex: 1,
+    },
+    label: {
+        fontSize: 16,
+        fontWeight: "bold",
+        marginTop: 15,
+        color: "#2c3e50",
+    },
+    chipContainer: {
+        flexDirection: 'row', 
+        flexWrap: 'wrap', 
+        marginVertical: 10,
+        gap: 4,
+    },
+    submitButton: {
+        marginTop: 20,
+        marginBottom: 40,
+        paddingVertical: 5,
+        borderRadius: 20,
+    },
+
+    
+
 });

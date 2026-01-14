@@ -2,7 +2,9 @@ from cloudinary.models import CloudinaryField
 from django.conf import settings
 from drf_yasg import openapi
 from rest_framework import serializers
-from openjobs_app.models import User, RoleUser, Employer, UserEmployer, Image, Job, Application, Category,WorkingTime
+from openjobs_app.models import User, RoleUser, Employer, UserEmployer, Image, Job, Application, Category, WorkingTime, \
+    Follow, Appreciation
+
 
 class UserSerializer(serializers.ModelSerializer):
     # avatar = serializers.ImageField(required=False,allow_null=True)
@@ -133,7 +135,7 @@ class JobSerializer(serializers.ModelSerializer):
         model = Job
         fields = ['id','name','active','description','skills','min_salary','max_salary','location',
                   'map_url', 'payment_type','deadline', 'employer', 'created_date',
-                  'employer_name','working_times','categories','employer_logo','company_images']
+                  'employer_name','working_times','categories','employer_logo','company_images',]
         read_only_fields = ['employer','created_date']
 
     def get_working_times(self, obj):
@@ -189,3 +191,15 @@ class WorkingTimeSerializer(serializers.ModelSerializer):
     class Meta:
         model = WorkingTime
         fields = ['id', 'name', 'start_time', 'end_time']
+
+
+class FollowSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Follow
+        fields = ['id', 'user', 'employer']
+
+
+class AppreciationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Appreciation
+        field = ['id' , 'employer', 'rating', 'content', 'user']
