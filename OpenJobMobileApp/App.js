@@ -22,6 +22,7 @@ import ViewApplications from './screens/Home/ViewApplications';
 import MyJobs from './screens/Home/MyJobs';
 import UserDetails from './screens/User/UserDetails';
 import JobHistory from './screens/Home/JobHistory';
+// import Chat from './screens/Home/Chat';
 
 
 const Stack = createNativeStackNavigator();
@@ -47,16 +48,13 @@ const TabNavigator = () => {
   return (
     <Tab.Navigator>
       <Tab.Screen name='Home' component={StackNavigatior} options={{ title: "Trang chủ", headerShown: false }} />
-      <Tab.Screen name='Chat' component={Chat} options={{ title:'Trò chuyện' ,tabBarLabel: 'Trò chuyện', tabBarIcon: ({ color }) => <Icon color={color} source="message-text" size={24} /> }} />
+      {/* <Tab.Screen name='Chat' component={Chat} options={{ title:'Trò chuyện' ,tabBarLabel: 'Trò chuyện', tabBarIcon: ({ color }) => <Icon color={color} source="message-text" size={24} /> }} /> */}
       {user && user.role === 'employer' && (
         <>
           <Tab.Screen name='PostJobs' component={PostJobs} options={{ title: "Đăng tin" }} />
           <Tab.Screen name='MyJobs' component={MyJobs} options={{ title: "Tin đã đăng" }} />
         </>
       )}
-      {/* {user && user.role === 'candidate' && (
-        <Tab.Screen name='Applications' component={Applications} options={{ title: "Việc đã ứng tuyển" }} />
-      )} */}
       {user === null ?
         <>
           <Tab.Screen name='Login' component={Login} />

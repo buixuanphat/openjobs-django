@@ -7,12 +7,12 @@ import { Button, Card, Chip, Divider, Text } from "react-native-paper";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import Styles from "./Styles";
 import * as DocumentPicker from 'expo-document-picker';
-<<<<<<< HEAD
+
 import MyButton from "../../components/MyButton";
-=======
+
 import MyStyles from "../../styles/MyStyles";
 import { Image } from "react-native";
->>>>>>> 387c1f9df2db09eaeab223e66409db6ea06fa7e9
+
 
 const JobDetails = ({ route }) => {
     const jobId = route.params?.jobId;
@@ -164,7 +164,7 @@ const JobDetails = ({ route }) => {
                         </Button>
 
                         {cvFile && (
-                            <Button mode="contained" onPress={handleApply} disabled={applied}>
+                            <Button mode="contained" onPress={handleApply} disabled={loading || applied}>
                                 XÁC NHẬN NỘP FILE NÀY
                             </Button>
                         )}

@@ -89,13 +89,17 @@
                             left={props => <List.Icon {...props} icon="account-edit" />}
                             onPress={() => nav.navigate('Home',{screen:'UserDetails'})}
                         />
-                        <Divider/>
-                        <List.Item
+                        {user?.role==='candidate' && (
+                            <View>
+                                <Divider/>
+                            <List.Item
                             title="Cập nhật CV"
                             description={(user && user.cv) ? "Đã có CV trên hệ thống!" : "Chưa cập nhật CV!"}
                             left={props => <List.Icon {...props} icon="file-pdf-box" />}
                             onPress={updateCV}
                         />
+                            </View>
+                        )}
                     </List.Section>
                 </Card>
                 <Card style={Styles.card}>

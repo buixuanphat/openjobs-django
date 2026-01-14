@@ -8,107 +8,61 @@ import { OAUTH2_CONFIG } from "../../AppConfig";
 import Apis, { authApis, endpoints } from "../../utils/Apis";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants from "expo-constants";
+import { Formik } from "formik";
+import { LoginSchema } from "../../utils/Schemas";
 
 const Login = ({ route }) => {
-
-    const info = [{
-        title: "Tên đăng nhập",
-        field: "username",
-        icon: "account"
-    }, {
-        title: "Mật khẩu",
-        field: "password",
-        secureTextEntry: true,
-        icon: "eye"
-    }];
-
-    const [user, setUser] = useState({});
     const [errMsg, setErrMsg] = useState();
     const [loading, setLoading] = useState(false);
     const [, dispatch] = useContext(MyUserContext);
     const nav = useNavigation();
 
-    const validate = () => {
-        if (!user.username) {
-            setErrMsg("Vui lòng nhập username!");
-            return false;
+    const handleLogin = async (values) => {
+        try {
+            setLoading(true);
+            const body =
+                `username=${encodeURIComponent(values.username)}` +
+                `&password=${encodeURIComponent(values.password)}` +
+                `&grant_type=password` +
+                // `&client_id=${Constants.expoConfig.extra.CLIENT_ID}` +
+                // `&client_secret=${Constants.expoConfig.extra.CLIENT_SECRET}`;
+                `&client_id=${OAUTH2_CONFIG.client_id}` +    
+                `&client_secret=${OAUTH2_CONFIG.client_secret}`;
+
+            let res = await Apis.post(endpoints['login'], body);
+
+            // let res = await Apis.post(endpoints['login'], {
+            //     ...user,
+            //     ...OAUTH2_CONFIG
+            //});
+            // console.info(res.data);
+            await AsyncStorage.setItem("token", res.data.access_token);
+            let user = await authApis(res.data.access_token).get(endpoints['current-user']);
+            console.info(user.data);
+
+            dispatch({
+                "type": "login",
+                "payload": user.data
+            });
+
+            const next = route.params?.next||"Home";
+            nav.navigate(next);
+        } catch (ex) {
+            console.info(ex);
+            console.log(JSON.stringify(ex))
+            if (ex.response && ex.response.data) {
+                if (ex.response.data.error === "invalid_grant") {
+                    Alert.alert(
+                        "Thông báo",
+                        "Tài khoản của bạn chưa được duyệt hoặc sai mật khẩu. Vui lòng kiểm tra lại!");
+                } else 
+                    setErrMsg("Lỗi hệ thống xác thực!");
+            } else
+                setErrMsg("Tài khoản hoặc mật khẩu không chính xác!");
+        } finally{
+            setLoading(false);
         }
-        if (!user.password) {
-            setErrMsg("Vui lòng nhập password!");
-            return false;
-        }
-
-        setErrMsg(null);
-
-        return true;
-    }
-
-
-
-    const login = async () => {
-        if (validate()) {
-            try {
-                setLoading(true);
-
-                const body =
-                    `username=${encodeURIComponent(user.username)}` +
-                    `&password=${encodeURIComponent(user.password)}` +
-                    `&grant_type=password` +
-                    `&client_id=${Constants.expoConfig.extra.CLIENT_ID}` +
-                    `&client_secret=${Constants.expoConfig.extra.CLIENT_SECRET}`;
-
-                let res = await Apis.post(endpoints['login'], body);
-
-
-                // let res = await Apis.post(endpoints['login'], {
-                //     ...user,
-                //     ...OAUTH2_CONFIG
-
-                // });
-                console.info(res.data);
-                // Alert.alert("Thông báo","Đăng nhập thành công!");
-                await AsyncStorage.setItem("token", res.data.access_token);
-
-                setTimeout(async () => {
-                    try {
-                        let user = await authApis(res.data.access_token).get(endpoints['current-user']);
-                        console.info(user.data);
-
-                        dispatch({
-                            "type": "login",
-                            "payload": user.data
-                        });
-
-                        const next = route.params?.next;
-                        if (next)
-                            nav.navigate(next || "Home");
-
-                    } catch (err) {
-                        console.info("Lỗi lấy User:", err);
-                        setErrMsg("Đăng nhập thành công nhưng không lấy được thông tin người dùng!");
-                    }
-                }, 500);
-
-            } catch (ex) {
-                console.info(ex);
-                console.log(JSON.stringify(ex))
-                if (ex.response && ex.response.data) {
-                    if (ex.response.data.error === "invalid_grant") {
-                        Alert.alert(
-                            "Thông báo",
-                            "Tài khoản của bạn chưa được duyệt hoặc sai mật khẩu. Vui lòng kiểm tra lại!"
-                        );
-                    } else {
-                        setErrMsg("Lỗi hệ thống xác thực!");
-                    }
-                } else
-                    setErrMsg("Tài khoản hoặc mật khẩu không chính xác!");
-            }
-            finally {
-                setLoading(false);
-            }
-        }
-    }
+    };
 
 
     return (
@@ -118,19 +72,55 @@ const Login = ({ route }) => {
                 {errMsg}
             </HelperText>
 
-            {info.map(i => <TextInput key={i.field} style={MyStyles.margin}
-                label={i.title}
-                secureTextEntry={i.secureTextEntry}
-                right={<TextInput.Icon icon={i.icon} />}
-                value={user[i.field]}
-                onChangeText={t => setUser({ ...user, [i.field]: t })} />)}
+            <Formik
+                initialValues={{ username: '', password: '' }}
+                validationSchema={LoginSchema}
+                onSubmit={handleLogin}>
+                {({ handleChange, handleBlur, handleSubmit, values, errors, touched }) => (
+                    <View>
+                        <TextInput
+                            label="Tên đăng nhập"
+                            style={MyStyles.margin}
+                            mode="outlined"
+                            left={<TextInput.Icon icon="account" />}
+                            onChangeText={handleChange('username')}
+                            onBlur={handleBlur('username')}
+                            value={values.username}
+                            error={touched.username && errors.username}/>
+                        <HelperText type="error" visible={touched.username && errors.username}>
+                            {errors.username}
+                        </HelperText>
+                        <TextInput
+                            label="Mật khẩu"
+                            style={MyStyles.margin}
+                            mode="outlined"
+                            secureTextEntry
+                            left={<TextInput.Icon icon="lock" />}
+                            right={<TextInput.Icon icon="eye" />}
+                            onChangeText={handleChange('password')}
+                            onBlur={handleBlur('password')}
+                            value={values.password}
+                            error={touched.password && errors.password}/>
+                        <HelperText type="error" visible={touched.password && errors.password}>
+                            {errors.password}
+                        </HelperText>
 
-
-            {user.avatar && <Image source={{ uri: user.avatar.uri }} width={250} style={[MyStyles.avatar, MyStyles.margin]} />}
-
-            <Button loading={loading} disabled={loading} mode="contained" icon="account" onPress={login}>Đăng nhập</Button>
+                        <Button 
+                            loading={loading} 
+                            disabled={loading} 
+                            mode="contained" 
+                            icon="login" 
+                            onPress={handleSubmit}
+                            style={{ marginTop: 20 }}>Đăng nhập</Button>
+                        
+                        <Button 
+                            mode="text" 
+                            onPress={() => nav.navigate("Register")}
+                            style={{ marginTop: 10 }}>Chưa có tài khoản? Đăng ký ngay</Button>
+                    </View>
+                )}
+            </Formik>
         </View>
-
     );
 }
 export default Login;

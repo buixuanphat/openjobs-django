@@ -82,7 +82,7 @@ DATABASES = {
         'ENGINE': 'django.db.backends.mysql',
         'NAME': 'openjobsdb',
         'USER': 'root',
-        'PASSWORD': '1234',
+        'PASSWORD': 'admin123@',
         'HOST': '',
     }
 }
@@ -108,8 +108,8 @@ AUTH_PASSWORD_VALIDATORS = [
 
 
 AUTHENTICATION_BACKENDS = [
-    'django.contrib.auth.backends.ModelBackend',
     'oauth2_provider.backends.OAuth2Backend',
+    'django.contrib.auth.backends.ModelBackend',
 ]
 
 
@@ -170,21 +170,22 @@ pymysql.install_as_MySQLdb()
 
 AUTH_USER_MODEL = 'openjobs_app.User'
 
-CLIENT_ID = 'SmLtbIKQLZLiYOZgsOxd3RoMyjjeM1NJHPLkW529'
-CLIENT_SECRET = 'HibpcvIy2N4Rie1sN4yEX9nHkFthCKTKa8T7PQ3UQi7fE734Xfxq7vElgsXo9naA35TRyr3vvrv9xy1QXzcXCjDEsSpozNScZ3CaUmfcKa47HsAYbYDJm2NThrQojcaM'
+# CLIENT_ID = 'SmLtbIKQLZLiYOZgsOxd3RoMyjjeM1NJHPLkW529'
+# CLIENT_SECRET = 'HibpcvIy2N4Rie1sN4yEX9nHkFthCKTKa8T7PQ3UQi7fE734Xfxq7vElgsXo9naA35TRyr3vvrv9xy1QXzcXCjDEsSpozNScZ3CaUmfcKa47HsAYbYDJm2NThrQojcaM'
 
 APP_CONFIG ={
     'EMPLOYER_MIN_IMAGES':3
 }
 
 OAUTH2_INFO={
-    "client_id":"xIxeTmq39UZs9Lx8wiXTvU1W3hNN2RI0b5e8jSP5",
-    "client_secret":"Xv7dEFnlWXFYiwnsWGm8tFqoY144Ljv2JFye2L3kuBURu9tPMXA4QmXFDyVNT5MjiDxib5kYhnbBw8QHJLowvVkEG0jtFvq5EN55CUPDln4rTY88HNmWTx4QLmkOvZla"
+    "client_id":"Fwt1mCxFJTMVbnHgWudUrCbiiNU3nc1vxq4DnKe9",
+    "client_secret":"iYii2BF67clPGYMWyDOVKUo4JeC4KcCBlSvXQsjUA53XGqYGo0F3P0P4hFgIq6QXvY6v8Cy9H0DuKTxbMOLihOzzAVBcu3PViijybbT7FUPnJ8xJyYLGO8xDkdiHOmWK"
 }
 
 
-ALLOWED_HOSTS = ["192.168.1.5", "10.0.2.2", "192.168.1.2" ,"localhost"]
-
+ALLOWED_HOSTS = ["192.168.1.4", "10.0.2.2", "192.168.1.2" ,"localhost"]
+# ALLOWED_HOSTS = ['*']
+# # ALLOWED_HOSTS = ['192.168.1.4', '127.0.0.1', 'localhost']
 
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 

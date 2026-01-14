@@ -1,80 +1,38 @@
 import { View, Text, ScrollView, TouchableOpacity, Image, Alert } from "react-native";
 import MyStyles from "../../styles/MyStyles";
-import { Button, RadioButton, TextInput } from "react-native-paper";
+import { Button, Divider, HelperText, RadioButton, TextInput } from "react-native-paper";
 import * as ImagePicker from 'expo-image-picker';
 import { useState } from "react";
 import { useNavigation } from "@react-navigation/native";
 import Apis, { endpoints } from "../../utils/Apis";
 import DateTimePicker from '@react-native-community/datetimepicker';
+import { Formik } from "formik";
+import { RegisterSchema } from "../../utils/Schemas";
 
 const Register = () => {
-    const info = [{
-        title: "Tên",
-        field: "first_name",
-        icon: "text"
-    }, {
-        title: "Họ và tên lót",
-        field: "last_name",
-        icon: "text"
-    }, {
-        title: "Tên đăng nhập",
-        field: "username",
-        icon: "account"
-    }, {
-        title: "Mật khẩu",
-        field: "password",
-        secureTextEntry: true,
-        icon: "eye"
-    }, {
-        title: "Xác nhận Mật khẩu",
-        field: "confirm_password",
-        secureTextEntry: true,
-        icon: "eye"
-    }, {
-        title: "Email",
-        field: "email",
-        icon: "email"
-    }, {
-        title: "Số điện thoại",
-        field: "phone_number",
-        icon: "phone"
-    }];
-
-    const employerInfor = [{
-        title: "Tên công ty",
-        field: "company_name",
-        icon: "office-building"
-    }, {
-        title: "Mã số thuế",
-        field: "tax_code",
-        icon: "card-account-details"
-    }, {
-        title: "Địa chỉ",
-        field: "address",
-        icon: "map-marker"
-    }];
-
-
-    const [user, setUser] = useState({ "gender": "male", "date_of_birth": new Date().toISOString().split('T')[0] });
-    const [errMsg, setErrMsg] = useState();
     const [loading, setLoading] = useState(false);
     const [role, setRole] = useState('candidate');
     const [showDate, setShowDate] = useState(false);
-    const [image, setImage] = useState([]);
+    const [images, setImages] = useState([]);
     const [logo, setLogo] = useState();
+    const [avatar, setAvatar] = useState(null);
     const nav = useNavigation();
 
-    const change = (field, value) => {
-        setUser(c => ({ ...c, [field]: value }));
-    }
-
-    const onDateChange = (event, selectedDate) => {
-        setShowDate(false);
-        if (selectedDate) {
-            change("date_of_birth", selectedDate.toISOString().split('T')[0]);
-        }
-
-    }
+    const [initialValues, setInitialValues] = useState({
+        first_name: '',
+        last_name: '',
+        username: '',
+        email: '',
+        password: '',
+        confirm_password: '',
+        phone_number: '',
+        gender: 'male',
+        date_of_birth: new Date().toISOString().split('T')[0],
+        role: role, 
+        company_name: '', 
+        tax_code: '', 
+        address: ''
+    });
 
     const picker = async (type) => {
         const { granted } = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -88,184 +46,208 @@ const Register = () => {
 
             if (!res.canceled)
                 if (type === 'images')
-                    setImage(res.assets);
+                    setImages(res.assets);
                 else if (type === 'logo')
                     setLogo(res.assets[0]);
                 else
-                    setUser({ ...user, "avatar": res.assets[0] });
+                    setAvatar(res.assets[0]);
         } else
             Alert.alert("Quyền truy cập bị từ chối!");
     }
 
-    const validate = () => {
-        if (!user.password || user.password !== user.confirm_password) {
-            setErrMsg("Mật khẩu KHÔNG khớp!");
-            Alert.alert("Mật khẩu xác nhận không khớp.");
-            return false;
-        }
+    const handleRegister = async (values) => {
+        if (!avatar)
+            return Alert.alert("Lỗi", "Vui lòng chọn ảnh đại diện!");
+        if (role === 'employer' && !logo)
+            return Alert.alert("Lỗi", "Vui lòng chọn logo công ty!");
 
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        if (user.email && !emailRegex.test(user.email)) {
-            setErrMsg("Email không hợp lệ (thiếu @ hoặc sai định dạng)!");
-            return false;
-        }
-
-        setErrMsg(null);
-        return true;
-    }
-
-    const register = async () => {
-        if (validate() === true) {
-            try {
-                setLoading(true);
-                let form = new FormData();
-
-                for (let key in user) {
-                    if (key !== 'confirm_password') {
-                        if (key === 'avatar') {
-                            form.append(key, {
-                                uri: user.avatar.uri,
-                                name: user.avatar.fileName || 'avatar.jpg',
-                                type: "image/jpeg"
-                            });
-                        }
-                        else
-                            form.append(key, user[key]);
-                    }
-                }
-
-                if (role === 'employer') {
-                    if (logo) {
-                        form.append('logo', {
-                            uri: logo.uri,
-                            name: 'logo.jpg',
-                            type: 'image/jpeg'
-                        });
-                    } else {
-                        Alert.alert("Vui lòng chọn Logo công ty!");
-                        setLoading(false);
-                        return;
-                    }
-
-                    image.forEach((img, index) => {
-                        form.append('images', {
-                            uri: img.uri,
-                            name: `env_${index}.jpg`,
-                            type: 'image/jpeg'
-                        });
-                    });
-                }
-
-
-                form.append('role', role);
-                const endpoint = role === 'candidate' ? endpoints['register-candidate'] : endpoints['register-employer'];
-
-                let res = await Apis.post(endpoint, form, {
-                    headers: {
-                        'Content-Type': 'multipart/form-data'
-                    }
+        try {
+            setLoading(true);
+            let form = new FormData();
+            Object.keys(values).forEach(key => {
+                if (key !== 'confirm_password')
+                    form.append(key, values[key]);
+            });
+            if (avatar) {
+                form.append('avatar', {
+                    uri: avatar.uri,
+                    name: 'avatar.jpg',
+                    type: 'image/jpeg'
                 });
-
-                if (res.status === 201) {
-                    Alert.alert("Thành công", "Đăng ký tài khoản thành công.");
-                    nav.navigate('Login');
-                } else
-                    setErrMsg("Đăng ký thất bại. Vui lòng thử lại sau!");
-            } catch (ex) {
-                console.log(ex)
-                setErrMsg("Đăng ký thất bại. Vui lòng thử lại sau!");
-                console.info(ex);
-            } finally {
-                setLoading(false);
             }
+            form.append('role', role);
+            if (role === 'employer') {
+                if (logo) {
+                    form.append('logo', { uri: logo.uri, name: 'logo.jpg', type: 'image/jpeg' });
+                }
+                images.forEach((img, index) => {
+                    form.append('images', {
+                        uri: img.uri,
+                        name: `env_${index}.jpg`,
+                        type: 'image/jpeg'
+                    });
+                });
+            }
+            const endpoint = role === 'candidate' ? endpoints['register-candidate'] : endpoints['register-employer'];
+            let res = await Apis.post(endpoint, form, {
+                headers: { 'Content-Type': 'multipart/form-data' }
+            });
+            if (res.status === 201) {
+                Alert.alert("Thành công", "Đăng ký thành công!");
+                nav.navigate('Login');
+            }
+        } catch (ex) {
+            Alert.alert("Lỗi", "Tài khoản hoặc email đã tồn tại!");
+        } finally {
+            setLoading(false);
         }
-    }
+    };
 
 
 
     return (
         <View style={[MyStyles.contentContainer, MyStyles.padding]}>
             <Text style={MyStyles.title}>ĐĂNG KÍ NGƯỜI DÙNG</Text>
-            <ScrollView>
-                {info.map(i => <TextInput style={MyStyles.margin} key={i.field} value={user[i.field]}
-                    onChangeText={(t) => setUser({ ...user, [i.field]: t })}
-                    label={i.title}
-                    secureTextEntry={i.secureTextEntry}
-                    right={<TextInput.Icon icon={i.icon} />}
-                />)}
+            <Formik
+                enableReinitialize={true}
+                initialValues={initialValues}
+                validationSchema={RegisterSchema}
+                onSubmit={handleRegister}
+            >
+                {({ handleChange, handleBlur, handleSubmit, values, errors, touched, setFieldValue }) => (
+                    <ScrollView>
+                        <TextInput
+                            label="Tên"
+                            mode="outlined"
+                            style={MyStyles.margin}
+                            onChangeText={handleChange('first_name')}
+                            value={values.first_name}
+                            error={touched.first_name && errors.first_name} />
+                        <TextInput
+                            label="Họ và tên lót"
+                            mode="outlined"
+                            style={MyStyles.margin}
+                            onChangeText={handleChange('last_name')}
+                            value={values.last_name}
+                            error={touched.last_name && errors.last_name} />
+                        <TextInput
+                            label="Tên đăng nhập"
+                            mode="outlined"
+                            style={MyStyles.margin}
+                            onChangeText={handleChange('username')}
+                            value={values.username}
+                        />
+                        <HelperText type="error" visible={touched.username && errors.username}>
+                            {errors.username}</HelperText>
+                        <TextInput
+                            label="Mật khẩu"
+                            secureTextEntry
+                            mode="outlined"
+                            style={MyStyles.margin}
+                            onChangeText={handleChange('password')}
+                            value={values.password} />
+                        <TextInput
+                            label="Xác nhận mật khẩu"
+                            secureTextEntry
+                            mode="outlined"
+                            style={MyStyles.margin}
+                            onChangeText={handleChange('confirm_password')}
+                            value={values.confirm_password}
+                            error={touched.confirm_password && errors.confirm_password} />
+                        <HelperText type="error" visible={touched.confirm_password && errors.confirm_password}>
+                            {errors.confirm_password}</HelperText>
 
-                <View style={MyStyles.radioContainer}>
-                    <Text style={MyStyles.radioLabel}>Giới tính</Text>
-                    <RadioButton.Group onValueChange={v => change("gender", v)} value={user.gender}>
-                        <View style={MyStyles.radioItem}>
-                            <RadioButton.Item label="Nam" value="male" />
-                            <RadioButton.Item label="Nữ" value="female" />
-                        </View>
-                    </RadioButton.Group>
-                </View>
-
-                <TouchableOpacity onPress={() => setShowDate(true)}>
-                    <TextInput style={MyStyles.margin} label="Ngày sinh" value={user.date_of_birth}
-                        editable={false} right={<TextInput.Icon icon="calendar" />}
-                    />
-                </TouchableOpacity>
-                {showDate && (
-                    <DateTimePicker value={new Date(user.date_of_birth)}
-                        mode="date" display="default" onChange={onDateChange}
-                    />
-                )}
-
-                <TouchableOpacity style={MyStyles.pickerBtn} onPress={() => picker('avatar')}>
-                    <Text style={MyStyles.pickerText}>Chọn ảnh đại diện...</Text>
-                </TouchableOpacity>
-                {user.avatar && <Image source={{ uri: user.avatar.uri }} style={MyStyles.avatar} />}
-
-                <View style={MyStyles.radioContainer}>
-                    <Text style={MyStyles.radioLabel}>Bạn là </Text>
-                    <RadioButton.Group onValueChange={value => setRole(value)} value={role}>
-                        <View style={MyStyles.radioItem}>
-                            <RadioButton.Item label="Ứng viên" value="candidate" />
-                            <RadioButton.Item label="Nhà tuyển dụng" value="employer" />
-                        </View>
-                    </RadioButton.Group>
-                </View>
-
-                {role === 'employer' && (
-                    <>
-                        <Text style={MyStyles.radioLabel}>Thông tin doanh nghiệp</Text>
-                        {employerInfor.map(i => (
-                            <TextInput style={MyStyles.margin} key={i.field} value={user[i.field]}
-                                onChangeText={(t) => change(i.field, t)}
-                                label={i.title}
-                                right={<TextInput.Icon icon={i.icon} />}
-                            />))}
-                        <TouchableOpacity style={MyStyles.pickerBtn} onPress={() => picker('logo')}>
-                            <Text style={MyStyles.pickerText}>Chọn logo...</Text>
+                        <TextInput
+                            label="Email"
+                            mode="outlined"
+                            style={MyStyles.margin}
+                            onChangeText={handleChange('email')}
+                            value={values.email}
+                            keyboardType="email-address" />
+                        <TextInput
+                            label="Số điện thoại"
+                            mode="outlined"
+                            style={MyStyles.margin}
+                            onChangeText={handleChange('phone_number')}
+                            value={values.phone_number}
+                            keyboardType="phone-pad" />
+                        <RadioButton.Group onValueChange={v => setFieldValue('gender', v)} value={values.gender}>
+                            <View style={MyStyles.radioItem}>
+                                <RadioButton.Item label="Nam" value="male" />
+                                <RadioButton.Item label="Nữ" value="female" />
+                            </View>
+                        </RadioButton.Group>
+                        <TouchableOpacity onPress={() => setShowDate(true)}>
+                            <TextInput
+                                label="Ngày sinh"
+                                value={values.date_of_birth}
+                                editable={false} mode="outlined"
+                                style={MyStyles.margin}
+                                right={<TextInput.Icon icon="calendar" />} />
                         </TouchableOpacity>
-                        {logo && <Image source={{ uri: logo.uri }} style={MyStyles.logo} />}
-                        <TouchableOpacity style={MyStyles.pickerBtn} onPress={() => picker('images')}>
-                            <Text style={MyStyles.pickerText}>
-                                Chọn ảnh môi trường làm việc...{image.length})
-                            </Text>
-                        </TouchableOpacity>
-                        {image.length > 0 && (
-                            <ScrollView horizontal>
-                                {image.map((img, index) =>
-                                    <Image key={index} source={{ uri: img.uri }} style={MyStyles.logo} />
-                                )}
-                            </ScrollView>
+                        {showDate && <DateTimePicker
+                            value={new Date(values.date_of_birth)}
+                            mode="date"
+                            onChange={(e, d) => {
+                                setShowDate(false);
+                                if (d) setFieldValue('date_of_birth', d.toISOString().split('T')[0])
+                            }}
+                        />
+                        }
+                        <Button
+                            icon="camera"
+                            onPress={() => picker('avatar')}
+                            style={MyStyles.margin}>Chọn ảnh đại diện</Button>
+                        {avatar && <Image source={{ uri: avatar.uri }} style={MyStyles.avatar} />}
+                        <Divider style={MyStyles.margin} />
+                        <RadioButton.Group onValueChange={v => setRole(v)} value={role}>
+                            <View style={MyStyles.radioItem}>
+                                <RadioButton.Item label="Ứng viên" value="candidate" />
+                                <RadioButton.Item label="Nhà tuyển dụng" value="employer" />
+                            </View>
+                        </RadioButton.Group>
+                        {role === 'employer' && (
+                            <View>
+                                <TextInput
+                                    label="Tên công ty"
+                                    mode="outlined"
+                                    style={MyStyles.margin}
+                                    onChangeText={handleChange('company_name')}
+                                    value={values.company_name}
+                                    error={touched.company_name && errors.company_name} />
+                                <TextInput
+                                    label="Mã số thuế"
+                                    mode="outlined"
+                                    style={MyStyles.margin}
+                                    onChangeText={handleChange('tax_code')}
+                                    value={values.tax_code} />
+                                <TextInput
+                                    label="Địa chỉ"
+                                    mode="outlined"
+                                    style={MyStyles.margin}
+                                    onChangeText={handleChange('address')}
+                                    value={values.address} />
+
+                                <Button icon="briefcase" onPress={() => picker('logo')}>Chọn Logo</Button>
+                                {logo && <Image source={{ uri: logo.uri }} style={MyStyles.logo} />}
+
+                                <Button icon="image-multiple" onPress={() => picker('images')}>
+                                    Ảnh môi trường ({images.length})</Button>
+                                <ScrollView horizontal contentContainerStyle={{ gap: 10, paddingVertical: 10 }}>
+                                    {images.map((img, i) => <Image key={i} source={{ uri: img.uri }} style={MyStyles.logo} />)}
+                                </ScrollView>
+                            </View>
                         )}
-                    </>
+                        <Button
+                            loading={loading}
+                            disabled={loading}
+                            mode="contained"
+                            onPress={handleSubmit}
+                            style={MyStyles.margin}
+                        >Đăng ký {role === 'candidate' ? 'Ứng viên' : 'Nhà tuyển dụng'}</Button>
+                    </ScrollView>
                 )}
-
-                {errMsg && <Text style={MyStyles.errorMsg}>{errMsg}</Text>}
-
-                <Button loading={loading} disabled={loading}
-                    icon="account" mode="contained"
-                    onPress={register}>
-                    Đăng Ký {role === 'candidate' ? 'Ứng Viên' : 'Nhà Tuyển Dụng'}
-                </Button>
-            </ScrollView>
+            </Formik>
         </View>
     );
 }

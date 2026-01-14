@@ -135,7 +135,7 @@ class JobSerializer(serializers.ModelSerializer):
         model = Job
         fields = ['id','name','active','description','skills','min_salary','max_salary','location',
                   'map_url', 'payment_type','deadline', 'employer', 'created_date',
-                  'employer_name','working_times','categories','employer_logo','company_images']
+                  'employer_name','working_times','categories','employer_logo','company_images',]
         read_only_fields = ['employer','created_date']
 
     def get_working_times(self, obj):

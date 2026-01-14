@@ -11,11 +11,12 @@ from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from django.conf import settings
+from django.db import transaction
 
 from openjobs.wsgi import application
 from openjobs_app import perms, paginators
 from openjobs_app.models import User, RoleUser, Job, UserEmployer, Application, ApplicationStatus, Category, \
-    WorkingTime, JobWorkingTime, Follow, Employer
+    WorkingTime, JobWorkingTime, Follow, Employer,JobCategory
 from openjobs_app.perms import isEmployer
 from openjobs_app.serializers import UserSerializer, CandidateRegistrationSerializer, EmployerRegistrationSerializer, \
     JobSerializer, ApplicationSerializer, CategorySerializer, WorkingTimeSerializer, FollowSerializer
@@ -131,7 +132,14 @@ class JobViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         user_emp = UserEmployer.objects.filter(user=self.request.user).first()
         if user_emp:
-            serializer.save(employer=user_emp.employer)
+            job=serializer.save(employer=user_emp.employer)
+
+            cat_ids = self.request.data.get('category_ids', [])
+            wt_ids = self.request.data.get('working_time_ids', [])
+            for c_id in cat_ids:
+                JobCategory.objects.create(job=job, category_id=c_id)
+            for w_id in wt_ids:
+                JobWorkingTime.objects.create(job=job, working_time_id=w_id)
 
             # Gửi mail cho người theo dõi
             employer = user_emp.employer
@@ -156,7 +164,20 @@ class JobViewSet(viewsets.ModelViewSet):
     def perform_update(self, serializer):
         user_emp=UserEmployer.objects.filter(user=self.request.user).first()
         if user_emp and serializer.instance.employer==user_emp.employer:
-            serializer.save()
+            with transaction.atomic():
+                job = serializer.save()
+                category_ids = self.request.data.get('category_ids')
+                if category_ids is not None:
+                    JobCategory.objects.filter(job=job).delete()
+                    for cat_id in category_ids:
+                        if cat_id:
+                            JobCategory.objects.create(job=job, category_id=cat_id)
+                working_time_ids = self.request.data.get('working_time_ids')
+                if working_time_ids is not None:
+                    JobWorkingTime.objects.filter(job=job).delete()
+                    for wt_id in working_time_ids:
+                        if wt_id:
+                            JobWorkingTime.objects.create(job=job, working_time_id=wt_id)
         else:
             raise serializers.ValidationError({"detail": "Lỗi xác thực Employer"})
     def perform_destroy(self, instance):
