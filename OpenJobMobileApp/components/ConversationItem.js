@@ -14,10 +14,10 @@ const ConversationItem = ({ conversation }) => {
                 screen: "ChatDetails",
                 params: { conversation: conversation }
             })}
-            style={{ flex: 1, backgroundColor: 'white', flexDirection: 'row', padding: 8, gap: 16, justifyContent: 'center', alignItems: 'center' }} >
-            <Avatar.Image source={{ uri: user?.role == 'employer' ? conversation.candidateAvatar : conversation.employerLogo }} />
-            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }} >
-                <Text style={{ flex: 1, fontSize: 16, fontWeight: 600 }} numberOfLines={1} ellipsizeMode="tail" >{user?.role == 'employer' ? conversation.candidateName : conversation.employerName}</Text>
+            style={{ flex: 1, backgroundColor: 'white', flexDirection: 'row', paddingHorizontal: 8, paddingVertical: 12, gap: 16, borderRadius: 16, marginHorizontal: 16, marginVertical: 8 }} >
+            <Avatar.Image size={55} source={{ uri: user?.role == 'employer' ? conversation.candidateAvatar : conversation.employerLogo }} />
+            <View style={{ flex: 1, justifyContent: 'center' }} >
+                <Text style={{ fontSize: 16, fontWeight: 600 }} numberOfLines={1}>{user?.role == 'employer' ? conversation.candidateName : conversation.employerName}</Text>
                 <Text>{conversation.lastMessage}</Text>
             </View>
         </TouchableOpacity>

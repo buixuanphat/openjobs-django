@@ -223,12 +223,17 @@ const JobDetails = ({ route }) => {
                     </Card>
                     {user?.role == 'candidate' &&
                         <View style={{ marginBottom: 50 }} >
-                            <MyButton onPress={() => nav.navigate("Chat", {
-                                employer: {
-                                    id: job.employer.user.id,
-                                    logo: job.employer.logo,
-                                    name: job.employer.company_name
+                            <MyButton onPress={() => nav.navigate("Home", {
+                                screen: "ChatDetails",
+                                params:
+                                {
+                                    employer: {
+                                        id: job.employer.user.id,
+                                        logo: job.employer.logo,
+                                        name: job.employer.company_name
+                                    }
                                 }
+
                             })} label="Liên hệ" icon="message-text" />
                         </View>
                     }

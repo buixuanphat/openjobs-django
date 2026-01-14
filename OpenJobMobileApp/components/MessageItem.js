@@ -8,6 +8,9 @@ const MessageItem = ({ message }) => {
 
     const [user] = useContext(MyUserContext)
 
+    if (!user)
+        return null
+
     return (
         <View style={{ marginHorizontal: 16, marginVertical: 8, alignItems: message.senderId === user.id ? 'flex-end' : 'flex-start' }}>
             <View style={{ maxWidth: screenWidth * 0.7, backgroundColor: 'white', borderRadius: 100, padding: 12, }} >
