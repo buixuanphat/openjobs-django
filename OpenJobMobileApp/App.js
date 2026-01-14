@@ -27,10 +27,13 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { authApis, endpoints } from './utils/Apis';
 import Shift from './screens/Home/Shift';
 import ChatDetails from './screens/Home/ChatDetails';
+import MyEmployment from './screens/Home/MyEmployment';
+import MyTokenReducer from './reducers/MyTokenReducer';
+import EmployerRatings from './screens/Home/EmployerRatings';
+import CandidateManagement from './screens/Home/CandidateManagement';
 
 
 const Stack = createNativeStackNavigator();
-let token
 
 const StackNavigatior = () => {
   return (
@@ -44,6 +47,9 @@ const StackNavigatior = () => {
       <Stack.Screen name="PostJobs" component={PostJobs} options={{ title: "Đăng tin ứng tuyển" }} />
       <Stack.Screen name="Shift" component={Shift} options={{ title: "Ca làm việc" }} />
       <Stack.Screen name="ChatDetails" component={ChatDetails} options={{ headerShown: false, title: "Đoạn chat của tôi" }} />
+      <Stack.Screen name="MyEmployment" component={MyEmployment} options={{ headerShown: false, title: "Công việc của tôi" }} />
+      <Stack.Screen name="EmployerRatings" component={EmployerRatings} options={{ title: "Đánh giá" }} />
+      <Stack.Screen name="CandidateManagement" component={CandidateManagement} options={{ title: "Nhân viên" }} />
     </Stack.Navigator>
   );
 }
@@ -51,11 +57,45 @@ const StackNavigatior = () => {
 const Tab = createBottomTabNavigator();
 const TabNavigator = () => {
   const [user,] = useContext(MyUserContext);
-  const [, dispatch] = useContext(MyUserContext);
+
+  return (
+    <Tab.Navigator>
+      {user === null ?
+        <>
+          <Tab.Screen name='Login' component={Login} />
+          <Tab.Screen name='Register' component={Register} />
+        </> : <>
+          <Tab.Screen name='Home' component={StackNavigatior} options={{ title: "Trang chủ", headerShown: false, tabBarIcon: ({ color }) => <Icon color={color} source="home" size={24} /> }} />
+          <Tab.Screen name='Chat' component={Chat} options={{ title: 'Trò chuyện', tabBarLabel: 'Trò chuyện', tabBarIcon: ({ color }) => <Icon color={color} source="message-text" size={24} /> }} />
+          <Tab.Screen name='Profile' component={Profile} options={{ title: "Hồ sơ", tabBarIcon: ({ color }) => <Icon color={color} source="account" size={24} /> }} />
+        </>
+      }
+      {user && user.role === 'employer' && (
+        <>
+          <Tab.Screen name='PostJobs' component={PostJobs} options={{ headerShown: false, title: "Đăng tin", tabBarIcon: ({ color }) => <Icon color={color} source="note-plus" size={24} /> }} />
+          <Tab.Screen name='MyJobs' component={MyJobs} options={{ title: "Tin đã đăng" }} />
+        </>
+      )}
+      {/* {user && user.role === 'candidate' && (
+        <Tab.Screen name='Applications' component={Applications} options={{ title: "Việc đã ứng tuyển" }} />
+      )} */}
+    </Tab.Navigator>
+  );
+}
+
+
+
+export default function App() {
+  const [user, dispatch] = useReducer(MyUserReducer, null);
+  const [myToken, tokenDispatch] = useReducer(MyTokenReducer, null)
 
   const loadInfo = async () => {
     try {
-      token = await AsyncStorage.getItem("token");
+      let token = await AsyncStorage.getItem("token");
+      tokenDispatch({
+        "type": "login",
+        "payload": token
+      });
 
       let res = await authApis(token).get(endpoints['current-user']);
 
@@ -74,38 +114,8 @@ const TabNavigator = () => {
   }, [])
 
   return (
-    <Tab.Navigator>
-      <Tab.Screen name='Home' component={StackNavigatior} options={{ title: "Trang chủ", headerShown: false }} />
-      <Tab.Screen name='Chat' component={Chat} options={{ title: 'Trò chuyện', tabBarLabel: 'Trò chuyện', tabBarIcon: ({ color }) => <Icon color={color} source="message-text" size={24} /> }} />
-      {user && user.role === 'employer' && (
-        <>
-          <Tab.Screen name='PostJobs' component={PostJobs} options={{ headerShown: false, title: "Đăng tin", tabBarIcon: ({ color }) => <Icon color={color} source="note-plus" size={24} /> }} />
-          <Tab.Screen name='MyJobs' component={MyJobs} options={{ title: "Tin đã đăng" }} />
-        </>
-      )}
-      {/* {user && user.role === 'candidate' && (
-        <Tab.Screen name='Applications' component={Applications} options={{ title: "Việc đã ứng tuyển" }} />
-      )} */}
-      {user === null ?
-        <>
-          <Tab.Screen name='Login' component={Login} />
-          <Tab.Screen name='Register' component={Register} />
-        </> : <>
-          <Tab.Screen name='Profile' component={Profile} options={{ title: "Hồ sơ", tabBarIcon: ({ color }) => <Icon color={color} source="account" size={24} /> }} />
-        </>
-      }
-    </Tab.Navigator>
-  );
-}
-
-
-
-export default function App() {
-  const [user, dispatch] = useReducer(MyUserReducer, null);
-
-  return (
     <PaperProvider>
-      <MyTokenContext.Provider value={token}>
+      <MyTokenContext.Provider value={[myToken, tokenDispatch]}>
         <MyUserContext.Provider value={[user, dispatch]}>
           <NavigationContainer>
             <TabNavigator />

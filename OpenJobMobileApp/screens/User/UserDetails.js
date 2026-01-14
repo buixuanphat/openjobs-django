@@ -13,7 +13,7 @@ const UserDetails=()=>{
         <ScrollView style={[MyStyles.container,MyStyles.padding,MyStyles.margin]}>
             <View style={MyStyles.margin}>
                 <Chip icon="shield-check" style={{ marginTop: 10 }}>
-                    {user.role === 'employer' ? 'Nhà tuyển dụng' : 'Ứng viên'}
+                    {user?.role === 'employer' ? 'Nhà tuyển dụng' : 'Ứng viên'}
                 </Chip>
             </View>
             <Card>
@@ -51,7 +51,7 @@ const UserDetails=()=>{
                 </List.Section>
             </Card>
             <Divider/>
-            {user.role==='employer'&&(
+            {user?.role==='employer'&&(
                 <Card style={MyStyles.margin}>
                     <Card.Content>
                         <List.Section>

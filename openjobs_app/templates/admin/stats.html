@@ -1,0 +1,108 @@
+{% extends 'admin/base_site.html' %}
+
+{% block content %}
+<h1>THỐNG KÊ SỐ LƯỢNG VIỆC LÀM</h1>
+<canvas id="jobChart"></canvas>
+
+<br><br>
+
+<h1>THỐNG KÊ SỐ LƯỢNG ỨNG VIÊN</h1>
+<canvas id="candidateChart"></canvas>
+
+<br><br>
+
+<h1>THỐNG KÊ SỐ LƯỢNG NHÀ TUYỂN DỤNG</h1>
+<canvas id="employerChart"></canvas>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+window.onload = function () {
+
+
+  const jobCtx = document.getElementById('jobChart');
+  let jobLabels = [];
+  let jobData = [];
+
+  {% for j in job_stats %}
+    jobLabels.push("{{ j.month|date:'m/Y' }}");
+    jobData.push({{ j.count }});
+  {% endfor %}
+
+  new Chart(jobCtx, {
+    type: 'bar',
+    data: {
+      labels: jobLabels,
+      datasets: [{
+        label: 'Việc làm',
+        data: jobData,
+        borderWidth: 1
+      }]
+    },
+    options: {
+      responsive: true,
+      scales: {
+        y: { beginAtZero: true }
+      }
+    }
+  });
+
+
+  const candidateCtx = document.getElementById('candidateChart');
+  let candidateLabels = [];
+  let candidateData = [];
+
+  {% for c in candidate_stats %}
+    candidateLabels.push("{{ c.month|date:'m/Y' }}");
+    candidateData.push({{ c.count }});
+  {% endfor %}
+
+  new Chart(candidateCtx, {
+    type: 'bar',
+    data: {
+      labels: candidateLabels,
+      datasets: [{
+        label: 'Ứng viên',
+        data: candidateData,
+        borderWidth: 1
+      }]
+    },
+    options: {
+      responsive: true,
+      scales: {
+        y: { beginAtZero: true }
+      }
+    }
+  });
+
+
+  const employerCtx = document.getElementById('employerChart');
+  let employerLabels = [];
+  let employerData = [];
+
+  {% for e in employer_stats %}
+    employerLabels.push("{{ e.month|date:'m/Y' }}");
+    employerData.push({{ e.count }});
+  {% endfor %}
+
+  new Chart(employerCtx, {
+    type: 'bar',
+    data: {
+      labels: employerLabels,
+      datasets: [{
+        label: 'Nhà tuyển dụng',
+        data: employerData,
+        borderWidth: 1
+      }]
+    },
+    options: {
+      responsive: true,
+      scales: {
+        y: { beginAtZero: true }
+      }
+    }
+  });
+
+}
+</script>
+{% endblock %}

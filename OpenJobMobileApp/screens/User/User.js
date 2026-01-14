@@ -108,7 +108,7 @@ const Profile = () => {
                     />
 
 
-                    {/* CẬP NHẬT CA LÀM VIỆC */}
+
                     {user.role == 'employer' &&
                         <View>
                             <Divider />
@@ -117,6 +117,38 @@ const Profile = () => {
                                 left={props => <List.Icon {...props} icon="clock-time-four" />}
                                 onPress={() => nav.navigate("Home", {
                                     screen: "Shift"
+                                })}
+                            />
+                        </View>
+                    }
+
+
+
+                    {user.role == 'employer' &&
+                        <View>
+                            <Divider />
+                            <List.Item
+                                title="Nhân viên"
+                                left={props => <List.Icon {...props} icon="account" />}
+                                onPress={() => nav.navigate("Home", {
+                                    screen: "CandidateManagement"
+                                })}
+                            />
+                        </View>
+                    }
+
+
+
+
+
+                    {user.role == 'candidate' &&
+                        <View>
+                            <Divider />
+                            <List.Item
+                                title="Công việc của tôi"
+                                left={props => <List.Icon {...props} icon="clock-time-four" />}
+                                onPress={() => nav.navigate("Home", {
+                                    screen: "MyEmployment"
                                 })}
                             />
                         </View>

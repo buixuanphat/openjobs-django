@@ -142,6 +142,9 @@ class Appreciation(BaseModel):
     job = models.ForeignKey(Job, on_delete=models.CASCADE, related_name='job_appreciations')
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='user_appreciations')
 
+    class Meta:
+        unique_together = ('user', 'job')
+
     def __str__(self):
         return self.content
 

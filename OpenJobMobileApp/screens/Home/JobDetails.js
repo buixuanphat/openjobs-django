@@ -1,9 +1,9 @@
 import { useContext, useEffect, useState } from "react";
-import { MyUserContext } from "../../utils/MyContexts";
+import { MyTokenContext, MyUserContext } from "../../utils/MyContexts";
 import { useNavigation } from "@react-navigation/native";
 import Apis, { authApis, endpoints } from "../../utils/Apis";
-import { Alert, Linking, ScrollView, TouchableOpacity, View } from "react-native";
-import { Button, Card, Chip, Divider, Text } from "react-native-paper";
+import { Alert, Linking, ScrollView, StyleSheet, TouchableOpacity, View } from "react-native";
+import { Avatar, Button, Card, Chip, Divider, Icon, Text } from "react-native-paper";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import Styles from "./Styles";
 import * as DocumentPicker from 'expo-document-picker';
@@ -20,16 +20,17 @@ const JobDetails = ({ route }) => {
     const [showApply, setShowApply] = useState(false);
     const [cvFile, setCvFile] = useState(null);
     const nav = useNavigation();
+    const [token] = useContext(MyTokenContext)
 
 
     const loadJob = async () => {
         try {
             setLoading(true);
-            const res = await Apis.get(endpoints['job-details'](jobId));
+            const res = await authApis(token).get(endpoints['job-details'](jobId));
             setJob(res.data);
             console.log("Chi tiết công việc: ", res.data)
         } catch (ex) {
-            console.error(ex);
+            console.log("Lỗi khi load job", ex);
         } finally {
             setLoading(false);
         }
@@ -178,12 +179,21 @@ const JobDetails = ({ route }) => {
         );
     };
 
+    const follow = async () => {
+        try {
+            let res = await authApis(token).post(endpoints['follow'](job.id))
+            loadJob()
+        }
+        catch (e) {
+            console.log("Lỗi khi follow", e)
+        }
+    }
+
     return (
-        <ScrollView style={Styles.container}>
+        <ScrollView>
             {job && (
                 <View>
-                    <Card style={Styles.card}>
-                        <Card.Cover source={{ uri: job.employer_logo }} />
+                    <View>
                         <Card.Content>
                             <Text style={Styles.title}>{job.name}</Text>
                             <Text style={Styles.row}>{job.employer_name}</Text>
@@ -215,14 +225,40 @@ const JobDetails = ({ route }) => {
                                     <Image
                                         key={index}
                                         source={{ uri: imgUrl }}
-                                        style={{ width: 100, height: 80, marginRight: 10, borderRadius: 10 }}
+                                        style={{ width: 300, aspectRatio: 1 / 1, marginRight: 10, borderRadius: 10 }}
                                     />
                                 ))}
                             </ScrollView>
                         </View>
-                    </Card>
-                    {user?.role == 'candidate' &&
-                        <View style={{ marginBottom: 50 }} >
+                    </View>
+
+
+
+
+
+                    <View style={{ margin: 16, backgroundColor: 'white', borderRadius: 16, padding: 8, gap: 8 }} >
+                        <View style={{ flexDirection: 'row', alignItems: 'center' }} >
+                            <View style={{ width: 100, height: 100 }} >
+                                <TouchableOpacity
+                                    onPress={() => nav.navigate("Home", {
+                                        screen: "EmployerRatings",
+                                        params:
+                                        {
+                                            employerId: job.employer.id
+                                        }
+                                    })}
+                                >
+                                    <Avatar.Image size={100} source={{ uri: job.employer.logo }} />
+                                </TouchableOpacity>
+                                <TouchableOpacity onPress={follow} style={{ position: 'absolute', right: -12, top: 38 }} >
+                                    <Icon size={24} source={job.employer.is_follow ? 'check-circle' : 'plus-circle'} />
+                                </TouchableOpacity>
+                            </View>
+                            <View style={{ flex: 1, marginLeft: 24 }} >
+                                <Text style={{ fontSize: 16, textAlign: 'center' }}> {job.employer.company_name}</Text>
+                            </View>
+                        </View>
+                        {user?.role == 'candidate' &&
                             <MyButton onPress={() => nav.navigate("Home", {
                                 screen: "ChatDetails",
                                 params:
@@ -234,14 +270,18 @@ const JobDetails = ({ route }) => {
                                     }
                                 }
 
-                            })} label="Liên hệ" icon="message-text" />
-                        </View>
-                    }
+                            })} label="Liên hệ" icon="message-text" />}
+                    </View>
+
+
+
 
                 </View>
             )}
         </ScrollView>
     );
 };
+const styles = StyleSheet.create({
 
+})
 export default JobDetails;

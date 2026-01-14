@@ -24,7 +24,7 @@ const ChatDetails = ({ route }) => {
     const [loading, setLoading] = useState(false)
     const [isFirsts, setIsFirst] = useState(true)
 
-    let conversationId = conversation? conversation.id : `${user.id}_${employer.id}`
+    let conversationId = conversation ? conversation.id : `${user.id}_${employer.id}`
 
 
     const createConversation = async (employer) => {
@@ -83,7 +83,7 @@ const ChatDetails = ({ route }) => {
 
 
     useEffect(() => {
-       if(!user) return
+        if (!user) return
 
         setLoading(true);
 
@@ -148,7 +148,7 @@ const ChatDetails = ({ route }) => {
             />
             <View style={styles.inputContainer} >
                 <View style={{ flex: 1 }}>
-                    <MyTextInput value={message} placeholder="Nhập nội dung tin nhắn" onChangeText={(value) => setMessage(value)} />
+                    <MyTextInput background='white' value={message} placeholder="Nhập nội dung tin nhắn" onChangeText={(value) => setMessage(value)} />
                 </View>
                 <TouchableOpacity onPress={sendMessage} >
                     <Icon color={MyColor.primary} source='send' size={24} />

@@ -15,7 +15,13 @@ export const endpoints = {
 
 
     'getShifts': '/employers/working-times/',
-    'createShift': '/working-times/'
+    'createShift': '/working-times/',
+    'follow': (jobId) => `/jobs/${jobId}/follow/`,
+    'employments': '/employments/',
+    'appreciations': '/appreciations/',
+    'getAppreciation': (id) => `/employers/${id}/ratings/`,
+    'getMyCandidate': '/employers/employments/',
+    'terminate': (id) => `/employers/${id}/terminate/`
 };
 
 export const authApis = (token) => {

@@ -3,7 +3,7 @@ import MyStyles from "../../styles/MyStyles";
 import { Button, HelperText, TextInput } from "react-native-paper";
 import { useContext, useState } from "react";
 import { useNavigation } from "@react-navigation/native";
-import { MyUserContext } from "../../utils/MyContexts";
+import { MyTokenContext, MyUserContext } from "../../utils/MyContexts";
 import { OAUTH2_CONFIG } from "../../AppConfig";
 import Apis, { authApis, endpoints } from "../../utils/Apis";
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -26,6 +26,7 @@ const Login = ({ route }) => {
     const [errMsg, setErrMsg] = useState();
     const [loading, setLoading] = useState(false);
     const [, dispatch] = useContext(MyUserContext);
+    const [, tokenDispatch] = useContext(MyTokenContext)
     const nav = useNavigation();
 
     const validate = () => {
@@ -58,7 +59,10 @@ const Login = ({ route }) => {
                     `&client_secret=${Constants.expoConfig.extra.CLIENT_SECRET}`;
 
                 let res = await Apis.post(endpoints['login'], body);
-
+                tokenDispatch({
+                    "type": "login",
+                    "payload": res.data.access_token
+                });
 
                 // let res = await Apis.post(endpoints['login'], {
                 //     ...user,

@@ -26,22 +26,24 @@ const PostJobs = ({ route }) => {
     const [showDuration, setShowDuration] = useState(false)
     const nav = useNavigation();
 
-    const token = useContext(MyTokenContext)
+    const [token] = useContext(MyTokenContext)
     const [user] = useContext(MyUserContext)
 
-    useEffect(() => {
-        const loadWorkingTimes = async () => {
-            try {
+    const loadWorkingTimes = async () => {
+        if (!token) return
+        try {
 
-                let res = await authApis(token).get(endpoints['getShifts']);
-                console.log(res.data)
-                setWorkingTimes(res.data);
-            } catch (ex) {
-                console.error("Lỗi lấy ca làm việc:", ex);
-            }
-        };
+            let res = await authApis(token).get(endpoints['getShifts']);
+            console.log(res.data)
+            setWorkingTimes(res.data);
+        } catch (ex) {
+            console.error("Lỗi lấy ca làm việc:", ex);
+        }
+    };
+
+    useEffect(() => {
         loadWorkingTimes();
-    }, []);
+    }, [token]);
 
     const toggleTime = (timeId) => {
         if (selectedTimes.includes(timeId)) {
@@ -104,7 +106,7 @@ const PostJobs = ({ route }) => {
                 ...job,
                 shifts: selectedTimes
             };
-            console.log(dataToSend)
+            console.log("DATA", dataToSend)
 
             let res;
             if (jobId) {
@@ -259,10 +261,10 @@ const PostJobs = ({ route }) => {
                     }
                 >
                     <Menu.Item onPress={() => { update("duration", "1_month"); setShowDuration(false); }} title="Một tháng" />
-                    <Menu.Item onPress={() => { update("duration", "2_month"); setShowDuration(false); }} title="Ba tháng" />
-                    <Menu.Item onPress={() => { update("duration", "3_month"); setShowDuration(false); }} title="Sáu tháng" />
+                    <Menu.Item onPress={() => { update("duration", "2_months"); setShowDuration(false); }} title="Ba tháng" />
+                    <Menu.Item onPress={() => { update("duration", "3_months"); setShowDuration(false); }} title="Sáu tháng" />
                     <Menu.Item onPress={() => { update("duration", "1_year"); setShowDuration(false); }} title="Một năm" />
-                    <Menu.Item onPress={() => { update("duration", "2_year"); setShowDuration(false); }} title="Hai năm" />
+                    <Menu.Item onPress={() => { update("duration", "2_years"); setShowDuration(false); }} title="Hai năm" />
                 </Menu>
             </ScrollView>
             <View style={styles.buttonContainer} >

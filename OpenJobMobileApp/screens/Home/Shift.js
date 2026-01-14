@@ -12,7 +12,7 @@ import dayjs from "dayjs";
 
 const Shift = () => {
 
-    const token = useContext(MyTokenContext)
+    const [token] = useContext(MyTokenContext)
     const [shifts, setShifts] = useState([])
     const [startTime, setStartTime] = useState(new Date())
     const [endTime, setEndTime] = useState(new Date())

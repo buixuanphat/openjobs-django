@@ -132,10 +132,11 @@ class WorkingTimeSerializer(serializers.ModelSerializer):
 
 class EmployerWithUserSerializer(serializers.ModelSerializer):
     user = serializers.SerializerMethodField()
+    is_follow = serializers.SerializerMethodField()
 
     class Meta:
         model = Employer
-        fields = ['id', 'company_name', 'logo', 'address', 'tax_code', 'user']
+        fields = ['id', 'company_name', 'logo', 'address', 'tax_code', 'user', 'is_follow']
 
     def get_user(self, employer):
         user_emp = UserEmployer.objects.filter(employer=employer).select_related('user').first()
@@ -147,6 +148,15 @@ class EmployerWithUserSerializer(serializers.ModelSerializer):
             'email': user_emp.user.email,
             'avatar': user_emp.user.avatar.url if user_emp.user.avatar else None,
         }
+
+    def get_is_follow(self, employer):
+        user = self.context['request'].user
+        follow = Follow.objects.filter(user=user, employer=employer)
+        if(follow):
+            return True
+        else:
+            return False
+
 
     def to_representation(self, instance):
         data=super().to_representation(instance)
@@ -236,17 +246,35 @@ class FollowSerializer(serializers.ModelSerializer):
 
 
 class AppreciationSerializer(serializers.ModelSerializer):
+
+    user = UserSerializer(read_only=True)
+
     class Meta:
         model = Appreciation
-        field = ['id' , 'employer', 'rating', 'content', 'user']
+        fields = ['id' , 'job', 'rating', 'content', 'user']
+        read_only_fields = ['user']
 
 
 class EmploymentSerializer(serializers.ModelSerializer):
+
+    job = JobSerializer(read_only=True)
+    user = UserSerializer(read_only=True)
+    is_rating = serializers.SerializerMethodField()
+
     class Meta:
         model = Employment
-        field = ['start_date', 'end_date', 'status', 'user', 'job']
+        fields = ['id' ,'start_date', 'end_date', 'status', 'user', 'job', 'is_rating']
+
+    def get_is_rating(self, employment):
+        user = self.context['request'].user
+        rating = Appreciation.objects.filter(user=user, job=employment.job)
+        if rating:
+            return True
+        else:
+            return False
+
 
 class EmployerSerializer(serializers.ModelSerializer):
     class Meta:
         model = Employer
-        field = ['id', 'company_name', 'logo', 'description', 'address', 'tax_code', 'created_date', 'updated_date']
+        fields = ['id', 'company_name', 'logo', 'description', 'address', 'tax_code', 'created_date', 'updated_date']

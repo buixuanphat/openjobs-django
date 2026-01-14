@@ -1,6 +1,9 @@
+from unittest import case
+
 from django.contrib.auth import authenticate, get_user_model
 from django.contrib.auth.backends import ModelBackend
 from django.shortcuts import render
+from django.utils.duration import duration_string
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
 from oauth2_provider.models import AccessToken
@@ -11,15 +14,17 @@ from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from django.conf import settings
+from datetime import date
+from dateutil.relativedelta import relativedelta
 
 from openjobs.wsgi import application
 from openjobs_app import perms, paginators
 from openjobs_app.models import User, RoleUser, Job, UserEmployer, Application, ApplicationStatus, Category, \
-    WorkingTime, Follow, Employer, Employment
+    WorkingTime, Follow, Employer, Employment, EmploymentStatus, Duration, Appreciation
 from openjobs_app.perms import isEmployer
 from openjobs_app.serializers import UserSerializer, CandidateRegistrationSerializer, EmployerRegistrationSerializer, \
     JobSerializer, ApplicationSerializer, CategorySerializer, WorkingTimeSerializer, FollowSerializer, \
-    EmployerSerializer
+    EmployerSerializer, EmploymentSerializer, AppreciationSerializer
 from django.core.mail import send_mail
 
 
@@ -135,10 +140,6 @@ class JobViewSet(viewsets.ModelViewSet):
             serializer.save(employer=user_emp.employer)
 
 
-
-
-
-            # Gửi mail cho người theo dõi
             employer = user_emp.employer
 
             followers = Follow.objects.filter(employer=employer)
@@ -149,7 +150,7 @@ class JobViewSet(viewsets.ModelViewSet):
             print(self.request.data)
             print(emails)
             send_mail(
-                subject='Test mail',
+                subject='Thông báo tin tuyển dụng mới',
                 message=self.request.data.get('name'),
                 from_email=None,
                 recipient_list=emails,
@@ -233,6 +234,8 @@ class JobViewSet(viewsets.ModelViewSet):
         return Response(FollowSerializer(follow).data, status=status.HTTP_201_CREATED)
 
 
+
+
 class ApplicationViewSet(mixins.CreateModelMixin,mixins.ListModelMixin,
                          mixins.RetrieveModelMixin,mixins.UpdateModelMixin,
                          viewsets.GenericViewSet):
@@ -280,8 +283,32 @@ class ApplicationViewSet(mixins.CreateModelMixin,mixins.ListModelMixin,
             application.status=new_status
             application.save()
 
-            # Nếu đồng ý thì tạo Employment
-            Employment.objects.create()
+
+
+
+            if new_status == ApplicationStatus.ACCEPTED:
+                job = application.job
+                start_date = date.today()
+
+                duration_map = {
+                    Duration.ONE_MONTH: relativedelta(months=1),
+                    Duration.THREE_MONTHS: relativedelta(months=3),
+                    Duration.SIX_MONTHS: relativedelta(months=6),
+                    Duration.ONE_YEAR: relativedelta(years=1),
+                    Duration.TWO_YEARS: relativedelta(years=2),
+                }
+
+                delta = duration_map.get(job.duration)
+
+                end_date = start_date + delta
+
+                Employment.objects.create(
+                    user=application.user,
+                    job=job,
+                    start_date=start_date,
+                    end_date=end_date,
+                    status=EmploymentStatus.ACTIVE,
+                )
 
             return Response({"msg":f"Đã cập nhật trạng thái thành công {application.get_status_display()}"},
                             status=status.HTTP_200_OK)
@@ -321,6 +348,46 @@ class EmployerViewSet(viewsets.ViewSet):
         working_times = WorkingTime.objects.filter(employer=employer).all()
         return Response(WorkingTimeSerializer(working_times, many=True).data)
 
+    @action(methods=['get'], detail=True, url_path='ratings')
+    def get_rating(self, request, pk):
+        ratings = Appreciation.objects.filter(job__employer_id=pk).select_related('user')
+        return Response(AppreciationSerializer(ratings, many=True).data)
+
+    @action(methods=['get'], detail=False, url_path='employments')
+    def get_employments(self, request):
+        user = self.request.user
+        user_employer = UserEmployer.objects.filter(user=user).first()
+        employments = Employment.objects.filter(job__employer=user_employer.employer).select_related('job', 'user').all()
+        return Response(EmploymentSerializer(employments, many=True, context={'request': request}).data ,status=status.HTTP_200_OK)
+
+    @action(methods=['patch'], detail=True, url_path='terminate')
+    def terminate(self, request, pk):
+        employment = Employment.objects.filter(pk=pk).select_related('job', 'user').first()
+        employment.status = EmploymentStatus.TERMINATED
+        employment.save()
+        return Response(EmploymentSerializer(employment, context={'request': request}).data, status=status.HTTP_200_OK)
+
+
+
+
+class EmploymentViewSet(viewsets.ViewSet, generics.ListAPIView):
+    queryset = Employment.objects.filter(active=True)
+    serializer_class = EmploymentSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        query = self.queryset.filter(user=self.request.user).select_related('user', 'job')
+        return query
+
+
+class AppreciationViewSet(viewsets.ViewSet, generics.CreateAPIView):
+    queryset = Appreciation.objects.all()
+    serializer_class = AppreciationSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def perform_create(self, serializer):
+        user = self.request.user
+        serializer.save(user=user)
 
 
 

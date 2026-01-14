@@ -12,6 +12,8 @@ r.register('applications',views.ApplicationViewSet, basename='applications')
 r.register('categories',views.CategoryView, basename='categories')
 r.register('working-times', views.WorkingTimeViewSet, basename='working-times')
 r.register('employers',views.EmployerViewSet, basename='employers')
+r.register('employments',views.EmploymentViewSet, basename='employment')
+r.register('appreciations',views.AppreciationViewSet, basename='appreciation')
 
 urlpatterns = [
     path('', include(r.urls)),
