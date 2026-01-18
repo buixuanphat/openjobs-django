@@ -183,7 +183,7 @@ OAUTH2_INFO={
 }
 
 
-ALLOWED_HOSTS = ["192.168.1.5", "10.0.2.2", "192.168.1.2" ,"localhost"]
+ALLOWED_HOSTS = ["192.168.1.5", "10.0.2.2", "192.168.1.2","10.17.48.201" ,"localhost"]
 
 
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'

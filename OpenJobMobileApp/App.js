@@ -47,7 +47,7 @@ const StackNavigatior = () => {
       <Stack.Screen name="PostJobs" component={PostJobs} options={{ title: "Đăng tin ứng tuyển" }} />
       <Stack.Screen name="Shift" component={Shift} options={{ title: "Ca làm việc" }} />
       <Stack.Screen name="ChatDetails" component={ChatDetails} options={{ headerShown: false, title: "Đoạn chat của tôi" }} />
-      <Stack.Screen name="MyEmployment" component={MyEmployment} options={{ headerShown: false, title: "Công việc của tôi" }} />
+      <Stack.Screen name="MyEmployment" component={MyEmployment} options={{ title: "Công việc của tôi" }} />
       <Stack.Screen name="EmployerRatings" component={EmployerRatings} options={{ title: "Đánh giá" }} />
       <Stack.Screen name="CandidateManagement" component={CandidateManagement} options={{ title: "Nhân viên" }} />
     </Stack.Navigator>
@@ -62,8 +62,8 @@ const TabNavigator = () => {
     <Tab.Navigator>
       {user === null ?
         <>
-          <Tab.Screen name='Login' component={Login} />
-          <Tab.Screen name='Register' component={Register} />
+          <Tab.Screen name='Login' component={Login} options={{ tabBarIcon: ({ color }) => <Icon color={color} source="login" size={24} /> }} />
+          <Tab.Screen name='Register' component={Register} options={{ tabBarIcon: ({ color }) => <Icon color={color} source="account-plus" size={24} /> }} />
         </> : <>
           <Tab.Screen name='Home' component={StackNavigatior} options={{ title: "Trang chủ", headerShown: false, tabBarIcon: ({ color }) => <Icon color={color} source="home" size={24} /> }} />
           <Tab.Screen name='Chat' component={Chat} options={{ title: 'Trò chuyện', tabBarLabel: 'Trò chuyện', tabBarIcon: ({ color }) => <Icon color={color} source="message-text" size={24} /> }} />

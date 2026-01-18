@@ -1,303 +1,307 @@
-import { use, useContext, useEffect, useState } from "react";
-import { KeyboardAvoidingView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
-import { Alert } from "react-native";
-import Apis, { authApis, endpoints } from "../../utils/Apis";
+import { useContext, useEffect, useState } from "react";
+import { KeyboardAvoidingView, ScrollView, StyleSheet, Text, TouchableOpacity, View, Alert } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import MyStyles from "../../styles/MyStyles";
-import { Appbar, Button, Chip, Menu, TextInput } from "react-native-paper";
+import { Appbar, Button, Chip, HelperText, Menu, TextInput } from "react-native-paper";
 import DateTimePicker from '@react-native-community/datetimepicker';
-import MyTextInput from "../../components/MyTextInput"
-import MyButton from "../../components/MyButton"
+import { Formik } from 'formik';
+
+import Apis, { authApis, endpoints } from "../../utils/Apis";
+import MyStyles from "../../styles/MyStyles";
 import MyColor from "../../utils/MyColor";
-import { SafeAreaView } from "react-native-safe-area-context";
 import { MyTokenContext, MyUserContext } from "../../utils/MyContexts";
+import { PostJobSchema } from "../../utils/Schemas";
 
 const PostJobs = ({ route }) => {
     const jobId = route.params?.jobId;
-
-    const [job, setJob] = useState({ payment_type: 'monthly' });
-    const [showDate, setShowDate] = useState(false);
-    const [date, setDate] = useState(new Date());
-    const [showMenu, setShowMenu] = useState(false);
-    const [workingTimes, setWorkingTimes] = useState([]);
-    const [selectedTimes, setSelectedTimes] = useState([]);
-    const [loading, setLoading] = useState(false);
-    const [showDuration, setShowDuration] = useState(false)
     const nav = useNavigation();
+    const [token] = useContext(MyTokenContext);
+    const [user] = useContext(MyUserContext);
 
-    const [token] = useContext(MyTokenContext)
-    const [user] = useContext(MyUserContext)
-
-    const loadWorkingTimes = async () => {
-        if (!token) return
-        try {
-
-            let res = await authApis(token).get(endpoints['getShifts']);
-            console.log(res.data)
-            setWorkingTimes(res.data);
-        } catch (ex) {
-            console.error("Lỗi lấy ca làm việc:", ex);
-        }
-    };
-
-    useEffect(() => {
-        loadWorkingTimes();
-    }, [token]);
-
-    const toggleTime = (timeId) => {
-        if (selectedTimes.includes(timeId)) {
-            setSelectedTimes(selectedTimes.filter(id => id !== timeId));
-        } else {
-            setSelectedTimes([...selectedTimes, timeId]);
-        }
-    };
-
-    const update = (field, value) => {
-        setJob(c => {
-            return { ...c, [field]: value };
-        });
-    };
-
-    const onChangeDate = (event, selectedDate) => {
-        setShowDate(false);
-        if (selectedDate) {
-            setDate(selectedDate);
-            const formattedDate = selectedDate.toISOString().split('T')[0];
-            update("deadline", formattedDate);
-        }
-    };
+    const [showDate, setShowDate] = useState(false);
+    const [showMenu, setShowMenu] = useState(false);
+    const [loading, setLoading] = useState(false);
+    
+    const [workingTimes, setWorkingTimes] = useState([]);
+    const [categories, setCategories] = useState([]);
+    const [initialValues, setInitialValues] = useState({
+        name: '',
+        description: '',
+        skills: '',
+        min_salary: '',
+        max_salary: '',
+        location: '',
+        map_url: '',
+        deadline: '',
+        payment_type: 'monthly',
+        duration: '1_month',
+        working_time_ids: [],
+        category_ids: []
+    });
 
     useEffect(() => {
-        const loadJobDetails = async () => {
-            if (jobId) {
-                try {
+        const loadInitData = async () => {
+            if (!token) return;
+            try {
+                const [resCat, resTimes] = await Promise.all([
+                    Apis.get(endpoints['categories']),
+                    authApis(token).get(endpoints['getShifts'])
+                ]);
+                setCategories(resCat.data);
+                setWorkingTimes(resTimes.data);
+
+                if (jobId) {
                     setLoading(true);
-                    let res = await Apis.get(endpoints['job-details'](jobId));
-                    setJob(res.data);
-
-                    if (res.data.deadline)
-                        setDate(new Date(res.data.deadline));
-
-                } catch (ex) {
-                    console.error("Lỗi load chi tiết job:", ex);
-                    Alert.alert("Lỗi", "Không thể lấy thông tin tin đăng cũ!");
-                } finally {
-                    setLoading(false);
+                    let resJob = await authApis(token).get(endpoints['job-details'](jobId));
+                    const data = resJob.data;
+                    
+                    setInitialValues({
+                        ...data,
+                        min_salary: String(data.min_salary),
+                        max_salary: String(data.max_salary),
+                        category_ids: data.categories ? data.categories.map(c => c.id) : [],
+                        working_time_ids: data.shifts ? data.shifts.map(t => t.id) : (data.working_times ? data.working_times.map(t => t.id) : []),
+                    });
                 }
+            } catch (ex) {
+                console.error("Lỗi load dữ liệu:", ex);
+            } finally {
+                setLoading(false);
             }
         };
-        loadJobDetails();
-    }, [jobId]);
+        loadInitData();
+    }, [jobId, token]);
 
-    const postJob = async () => {
-        if (!job.name || !job.min_salary || !job.location || !job.deadline) {
-            Alert.alert("Vui lòng nhập các trường bắt buộc!");
-            return;
-        }
-
+    const handleSubmitForm = async (values, { resetForm }) => {
         setLoading(true);
         try {
-            const token = await AsyncStorage.getItem("token");
-
-            // let res=await authApis(token).post(endpoints['jobs'],job);
-
+            const currentToken = token || await AsyncStorage.getItem("token");
             const dataToSend = {
-                ...job,
-                shifts: selectedTimes
+                ...values,
+                shifts: values.working_time_ids 
             };
-            console.log("DATA", dataToSend)
 
             let res;
             if (jobId) {
-                res = await authApis(token).patch(endpoints['job-details'](jobId), dataToSend);
+                res = await authApis(currentToken).patch(endpoints['job-details'](jobId), dataToSend);
             } else {
-                res = await authApis(token).post(endpoints['jobs'], dataToSend);
+                res = await authApis(currentToken).post(endpoints['jobs'], dataToSend);
             }
 
             if (res.status === 201 || res.status === 200) {
-                Alert.alert("Thông báo", jobId ? "Cập nhật thành công!" : "Tin tuyển dụng đã được đăng!");
+                Alert.alert("Thành công", jobId ? "Cập nhật thành công!" : "Tin tuyển dụng đã được đăng!");
+                resetForm();
                 nav.navigate("MyJobs", { reload: true });
             }
-        } catch (ex) {
-            console.error(ex);
-            Alert.alert("Lỗi");
+        } catch (error) {
+            console.error("Error details:", error.response?.data || error.message);
+            Alert.alert("Lỗi", "Không thể lưu dữ liệu!");
         } finally {
             setLoading(false);
         }
     };
 
     return (
-        <KeyboardAvoidingView style={styles.container} behavior="padding" >
+        <KeyboardAvoidingView style={styles.container} behavior="padding">
             <Appbar.Header style={styles.appbar}>
                 <Appbar.Content title={jobId ? "Chỉnh sửa tin" : "Đăng tin mới"} titleStyle={styles.headerTitle} />
             </Appbar.Header>
+
             <ScrollView style={styles.formContainer} showsVerticalScrollIndicator={false}>
-                <TextInput
-                    style={MyStyles.margin}
-                    value={job.name}
-                    mode="outlined"
-                    onChangeText={t => update("name", t)}
-                    label="Tiêu đề"
-                />
-                <TextInput
-                    style={MyStyles.margin}
-                    value={job.description}
-                    mode="outlined"
-                    onChangeText={t => update("description", t)}
-                    label="Mô tả công việc"
-                />
-                <TextInput
-                    style={MyStyles.margin}
-                    value={job.skills}
-                    mode="outlined"
-                    onChangeText={t => update("skills", t)}
-                    label="Kỹ năng"
-                />
-                <View style={MyStyles.margin}>
-                    <TextInput
-                        value={job.min_salary}
-                        mode="outlined"
-                        onChangeText={t => update("min_salary", t)}
-                        label="Lương tối thiểu"
-                    />
-                    <TextInput
-                        value={job.max_salary}
-                        mode="outlined"
-                        onChangeText={t => update("max_salary", t)}
-                        label="Lương tối đa"
-                    />
-                </View>
-                <TextInput
-                    style={MyStyles.margin}
-                    value={job.location}
-                    mode="outlined"
-                    onChangeText={t => update("location", t)}
-                    label="Địa chỉ"
-                />
-                <TextInput
-                    style={MyStyles.margin}
-                    value={job.map_url}
-                    mode="outlined"
-                    onChangeText={t => update("map_url", t)}
-                    label="Link Google Map"
-                />
-                <TouchableOpacity onPress={() => setShowDate(true)}>
-                    <TextInput
-                        label="Hạn nộp hồ sơ"
-                        value={job.deadline || "Nhấn để chọn ngày"}
-                        mode="outlined"
-                        editable={false}
-                        style={MyStyles.margin}
-                        right={<TextInput.Icon icon="calendar" onPress={() => setShowDate(true)} />}
-                    />
-                </TouchableOpacity>
-                {showDate && (
-                    <DateTimePicker
-                        value={date}
-                        mode="date"
-                        display="default"
-                        minimumDate={new Date()}
-                        onChange={onChangeDate}
-                    />
-                )}
-
-
-                {/* THỜI GIAN LÀM VIỆC */}
-                <Text style={{ marginTop: 10, fontWeight: 'bold' }}>Thời gian làm việc (Chọn các ca):</Text>
-                <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginVertical: 10 }}>
-                    {workingTimes.map(t => (
-                        <Chip
-                            key={t.id}
-                            style={{ margin: 2 }}
-                            selected={selectedTimes.includes(t.id)}
-                            onPress={() => toggleTime(t.id)}
-                            icon={selectedTimes.includes(t.id) ? "check" : "clock"}
-                        >
-                            {t.name} ({t.start_time.substring(0, 5)} - {t.end_time.substring(0, 5)})
-                        </Chip>
-                    ))}
-                </View>
-
-
-
-
-                <Menu
-                    visible={showMenu}
-                    onDismiss={() => setShowMenu(false)}
-                    anchor={
-                        <TouchableOpacity onPress={() => setShowMenu(true)}>
-                            <TextInput
-                                label="Hình thức trả lương *"
-                                value={job.payment_type === 'monthly' ? 'Theo tháng' :
-                                    job.payment_type === 'weekly' ? 'Theo tuần' : 'Theo giờ'}
-                                mode="outlined"
-                                editable={false}
-                                style={MyStyles.margin}
-                                right={<TextInput.Icon icon="chevron-down" onPress={() => setShowMenu(true)} />}
-                            />
-                        </TouchableOpacity>
-                    }
+                <Formik
+                    enableReinitialize={true}
+                    initialValues={initialValues}
+                    validationSchema={PostJobSchema}
+                    onSubmit={handleSubmitForm}
                 >
-                    <Menu.Item onPress={() => { update("payment_type", "hourly"); setShowMenu(false); }} title="Theo giờ" />
-                    <Menu.Item onPress={() => { update("payment_type", "weekly"); setShowMenu(false); }} title="Theo tuần" />
-                    <Menu.Item onPress={() => { update("payment_type", "monthly"); setShowMenu(false); }} title="Theo tháng" />
-                </Menu>
-
-                <Menu
-                    visible={showDuration}
-                    onDismiss={() => setShowDuration(false)}
-                    anchor={
-                        <TouchableOpacity onPress={() => setShowDuration(true)}>
+                    {({ handleChange, handleBlur, handleSubmit, setFieldValue, values, errors, touched }) => (
+                        <View style={{ paddingBottom: 40 }}>
                             <TextInput
-                                value={job.duration}
-                                label="Thời hạn hợp đồng"
+                                label="Tiêu đề *"
                                 mode="outlined"
-                                editable={false}
                                 style={MyStyles.margin}
-                                right={<TextInput.Icon icon="chevron-down" onPress={() => setShowDuration(true)} />}
+                                onChangeText={handleChange('name')}
+                                onBlur={handleBlur('name')}
+                                value={values.name}
+                                error={touched.name && errors.name}
                             />
-                        </TouchableOpacity>
-                    }
-                >
-                    <Menu.Item onPress={() => { update("duration", "1_month"); setShowDuration(false); }} title="Một tháng" />
-                    <Menu.Item onPress={() => { update("duration", "2_months"); setShowDuration(false); }} title="Ba tháng" />
-                    <Menu.Item onPress={() => { update("duration", "3_months"); setShowDuration(false); }} title="Sáu tháng" />
-                    <Menu.Item onPress={() => { update("duration", "1_year"); setShowDuration(false); }} title="Một năm" />
-                    <Menu.Item onPress={() => { update("duration", "2_years"); setShowDuration(false); }} title="Hai năm" />
-                </Menu>
+                            {touched.name && errors.name && <HelperText type="error">{errors.name}</HelperText>}
+
+                            <TextInput
+                                label="Mô tả công việc *"
+                                mode="outlined"
+                                multiline
+                                numberOfLines={4}
+                                style={MyStyles.margin}
+                                onChangeText={handleChange('description')}
+                                onBlur={handleBlur('description')}
+                                value={values.description}
+                                error={touched.description && errors.description}
+                            />
+                            <TextInput
+                                label="Kỹ năng *"
+                                mode="outlined"
+                                style={MyStyles.margin}
+                                onChangeText={handleChange('skills')}
+                                onBlur={handleBlur('skills')}
+                                value={values.skills}
+                                error={touched.skills && errors.skills}
+                            />
+                            {touched.skills && errors.skills && <HelperText type="error">{errors.skills}</HelperText>}
+
+
+                            <Text style={styles.labelSection}>Danh mục bài đăng:</Text>
+                            <View style={styles.chipContainer}>
+                                {categories.map(c => (
+                                    <Chip
+                                        key={c.id}
+                                        selected={values.category_ids.includes(c.id)}
+                                        onPress={() => {
+                                            const next = values.category_ids.includes(c.id)
+                                                ? values.category_ids.filter(id => id !== c.id)
+                                                : [...values.category_ids, c.id];
+                                            setFieldValue('category_ids', next);
+                                        }}
+                                        style={{ margin: 2 }}
+                                    >
+                                        {c.name}
+                                    </Chip>
+                                ))}
+                            </View>
+                
+                            <TextInput
+                                label="Địa chỉ làm việc *"
+                                mode="outlined"
+                                style={MyStyles.margin}
+                                onChangeText={handleChange('location')}
+                                onBlur={handleBlur('location')}
+                                value={values.location}
+                                error={touched.location && errors.location}
+                            />
+                            {touched.location && errors.location && <HelperText type="error">{errors.location}</HelperText>}
+
+                            <TextInput
+                                label="Link Google Map *"
+                                placeholder="https://maps.google.com..."
+                                mode="outlined"
+                                style={MyStyles.margin}
+                                onChangeText={handleChange('map_url')}
+                                onBlur={handleBlur('map_url')}
+                                value={values.map_url}
+                                error={touched.map_url && errors.map_url}
+                            />
+                            {touched.map_url && errors.map_url && <HelperText type="error">{errors.map_url}</HelperText>}
+
+
+                            <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                                <TextInput
+                                    label="Lương Min"
+                                    mode="outlined"
+                                    keyboardType="numeric"
+                                    style={[MyStyles.margin, { flex: 1 }]}
+                                    onChangeText={handleChange('min_salary')}
+                                    value={values.min_salary}
+                                />
+                                <TextInput
+                                    label="Lương Max"
+                                    mode="outlined"
+                                    keyboardType="numeric"
+                                    style={[MyStyles.margin, { flex: 1 }]}
+                                    onChangeText={handleChange('max_salary')}
+                                    value={values.max_salary}
+                                />
+                            </View>
+
+                            <TouchableOpacity onPress={() => setShowDate(true)}>
+                                <TextInput
+                                    label="Hạn nộp hồ sơ *"
+                                    value={values.deadline || "Chọn ngày"}
+                                    mode="outlined"
+                                    editable={false}
+                                    style={MyStyles.margin}
+                                    right={<TextInput.Icon icon="calendar" />}
+                                />
+                            </TouchableOpacity>
+                            {showDate && (
+                                <DateTimePicker
+                                    value={values.deadline ? new Date(values.deadline) : new Date()}
+                                    mode="date"
+                                    minimumDate={new Date()}
+                                    onChange={(event, selectedDate) => {
+                                        setShowDate(false);
+                                        if (selectedDate) {
+                                            setFieldValue('deadline', selectedDate.toISOString().split('T')[0]);
+                                        }
+                                    }}
+                                />
+                            )}
+
+                            <Text style={styles.labelSection}>Ca làm việc:</Text>
+                            <View style={styles.chipContainer}>
+                                {workingTimes.map(t => (
+                                    <Chip
+                                        key={t.id}
+                                        selected={values.working_time_ids.includes(t.id)}
+                                        onPress={() => {
+                                            const next = values.working_time_ids.includes(t.id)
+                                                ? values.working_time_ids.filter(id => id !== t.id)
+                                                : [...values.working_time_ids, t.id];
+                                            setFieldValue('working_time_ids', next);
+                                        }}
+                                        style={{ margin: 2 }}
+                                    >
+                                        {t.name}
+                                    </Chip>
+                                ))}
+                            </View>
+
+                            <Menu
+                                visible={showMenu}
+                                onDismiss={() => setShowMenu(false)}
+                                anchor={
+                                    <TouchableOpacity onPress={() => setShowMenu(true)}>
+                                        <TextInput
+                                            label="Hình thức trả lương *"
+                                            value={values.payment_type === 'monthly' ? 'Theo tháng' : 
+                                                values.payment_type === 'weekly' ? 'Theo tuần' : 'Theo giờ'}
+                                            mode="outlined"
+                                            editable={false}
+                                            style={MyStyles.margin}
+                                            right={<TextInput.Icon icon="chevron-down" />}
+                                        />
+                                    </TouchableOpacity>
+                                }
+                            >
+                                <Menu.Item onPress={() => { setFieldValue("payment_type", "hourly"); setShowMenu(false); }} title="Theo giờ" />
+                                <Menu.Item onPress={() => { setFieldValue("payment_type", "weekly"); setShowMenu(false); }} title="Theo tuần" />
+                                <Menu.Item onPress={() => { setFieldValue("payment_type", "monthly"); setShowMenu(false); }} title="Theo tháng" />
+                            </Menu>
+                                                
+                            <Button 
+                                mode="contained" 
+                                onPress={handleSubmit} 
+                                loading={loading}
+                                disabled={loading}
+                                style={{ marginTop: 20 }}
+                                buttonColor={MyColor.primary}
+                            >
+                                {jobId ? "Cập nhật tin" : "Đăng Tin"}
+                            </Button>
+                        </View>
+                    )}
+                </Formik>
             </ScrollView>
-            <View style={styles.buttonContainer} >
-                <MyButton label='Đăng' icon='upload' onPress={postJob} />
-            </View>
         </KeyboardAvoidingView>
     );
 };
 
 const styles = StyleSheet.create({
-    container:
-    {
-        backgroundColor: MyColor.background,
-        flex: 1,
-    },
-    formContainer:
-    {
-        flex: 1,
-        padding: 16
-    },
-    buttonContainer:
-    {
-        marginVertical: 8,
-        marginHorizontal: 16
-    },
-    headerTitle: {
-        fontSize: 22,
-        fontWeight: 'bold',
-        color: '#1a1a1a'
-    },
-    appbar: {
-        backgroundColor: '#fff',
-    },
-})
+    container: { backgroundColor: MyColor.background, flex: 1 },
+    formContainer: { flex: 1, padding: 16 },
+    headerTitle: { fontSize: 20, fontWeight: 'bold' },
+    appbar: { backgroundColor: '#fff' },
+    labelSection: { marginTop: 15, fontWeight: 'bold', marginBottom: 5 },
+    chipContainer: { flexDirection: 'row', flexWrap: 'wrap', marginBottom: 10 }
+});
 
 export default PostJobs;

@@ -3,6 +3,7 @@ import { FlatList, Text, View } from "react-native"
 import { MyTokenContext } from "../../utils/MyContexts"
 import { authApis, endpoints } from "../../utils/Apis"
 import EmploymentItem from "../../components/EmploymentItem"
+import Empty from '../../components/Empty'
 
 const MyEmployment = () => {
     const [token] = useContext(MyTokenContext)
@@ -25,7 +26,9 @@ const MyEmployment = () => {
 
     return (
         <View>
+            
             <FlatList
+                ListEmptyComponent={<Empty />}
                 data={employments}
                 keyExtractor={(item) => item.id.toString()}
                 renderItem={({ item }) => <EmploymentItem employment={item} reload={loadEmployments} />}

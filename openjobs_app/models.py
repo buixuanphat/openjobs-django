@@ -80,6 +80,7 @@ class Employer(BaseModel):
     tax_code = models.CharField(max_length=50)
     company_name = models.CharField(max_length=100)
     logo = CloudinaryField(null=True, blank=True)
+    license = CloudinaryField(null=True, blank=True)
     description = models.TextField()
     address = models.TextField()
 

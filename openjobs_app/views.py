@@ -16,11 +16,10 @@ from rest_framework.views import APIView
 from django.conf import settings
 from datetime import date
 from dateutil.relativedelta import relativedelta
-
-from openjobs.wsgi import application
+from django.db import transaction
 from openjobs_app import perms, paginators
 from openjobs_app.models import User, RoleUser, Job, UserEmployer, Application, ApplicationStatus, Category, \
-    WorkingTime, Follow, Employer, Employment, EmploymentStatus, Duration, Appreciation
+    WorkingTime, Follow, Employer, Employment, EmploymentStatus, Duration, Follow, Employer, JobCategory, Appreciation
 from openjobs_app.perms import isEmployer
 from openjobs_app.serializers import UserSerializer, CandidateRegistrationSerializer, EmployerRegistrationSerializer, \
     JobSerializer, ApplicationSerializer, CategorySerializer, WorkingTimeSerializer, FollowSerializer, \
@@ -119,25 +118,25 @@ class JobViewSet(viewsets.ModelViewSet):
             return [permissions.IsAuthenticated()]
         return [permissions.AllowAny()]
 
-    @action(methods=['get'],detail=False,url_path='my-jobs')
-    def my_jobs(self, request):
-        user_emp_link = UserEmployer.objects.filter(user=request.user).first()
-        if not user_emp_link:
-            return Response({"detail": "Tài khoản của bạn chưa được liên kết với công ty nào."},
-                            status=status.HTTP_404_NOT_FOUND)
-        jobs = Job.objects.filter(employer=user_emp_link.employer, active=True).order_by('-created_date')
-        page = self.paginate_queryset(jobs)
-        if page is not None:
-            serializer = self.get_serializer(page, many=True)
-            return self.get_paginated_response(serializer.data)
-
-        serializer = self.get_serializer(jobs, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
 
     def perform_create(self, serializer):
         user_emp = UserEmployer.objects.filter(user=self.request.user).first()
         if user_emp:
-            serializer.save(employer=user_emp.employer)
+            job=serializer.save(employer=user_emp.employer)
+            if hasattr(self.request.data, 'getlist'):
+                cat_ids = self.request.data.getlist('category_ids')
+            else:
+                cat_ids = self.request.data.get('category_ids', [])
+            for c_id in cat_ids:
+                if c_id:
+                    JobCategory.objects.create(job=job, category_id=c_id)
+
+            if hasattr(self.request.data, 'getlist'):
+                wt_ids = self.request.data.getlist('working_time_ids')
+            else:
+                wt_ids = self.request.data.get('working_time_ids', [])
+            if wt_ids:
+                job.shifts.set(wt_ids)
 
 
             employer = user_emp.employer
@@ -160,9 +159,28 @@ class JobViewSet(viewsets.ModelViewSet):
             raise serializers.ValidationError({"detail": "Lỗi xác thực Employer"})
 
     def perform_update(self, serializer):
-        user_emp=UserEmployer.objects.filter(user=self.request.user).first()
-        if user_emp and serializer.instance.employer==user_emp.employer:
-            serializer.save()
+        user_emp = UserEmployer.objects.filter(user=self.request.user).first()
+        if user_emp and serializer.instance.employer == user_emp.employer:
+            with transaction.atomic():
+                job = serializer.save()
+                category_ids = self.request.data.get('category_ids')
+                if category_ids is not None:
+                    JobCategory.objects.filter(job=job).delete()
+                    if hasattr(self.request.data, 'getlist'):
+                        ids = self.request.data.getlist('category_ids')
+                    else:
+                        ids = category_ids
+                    for cat_id in ids:
+                        if cat_id:
+                            JobCategory.objects.create(job=job, category_id=cat_id)
+
+                working_time_ids = self.request.data.get('working_time_ids')
+                if working_time_ids is not None:
+                    if hasattr(self.request.data, 'getlist'):
+                        ids = self.request.data.getlist('working_time_ids')
+                    else:
+                        ids = working_time_ids
+                    job.shifts.set(ids)
         else:
             raise serializers.ValidationError({"detail": "Lỗi xác thực Employer"})
     def perform_destroy(self, instance):
@@ -217,11 +235,10 @@ class JobViewSet(viewsets.ModelViewSet):
 
         working_time = self.request.query_params.get('working_time_id')
         if working_time:
-            queryset = queryset.filter(job_time_slots__working_time__name__icontains=working_time)
+            queryset = queryset.filter(shifts__name__icontains=working_time)
         return queryset
 
 
-    # Follow nhà tuyển dụng
     @action(methods=['post'],detail=True,url_path='follow', permission_classes=[permissions.IsAuthenticated])
     def follow (self, request, pk):
         employer= self.get_object().employer
@@ -237,7 +254,7 @@ class JobViewSet(viewsets.ModelViewSet):
 
 
 class ApplicationViewSet(mixins.CreateModelMixin,mixins.ListModelMixin,
-                         mixins.RetrieveModelMixin,mixins.UpdateModelMixin,
+                         mixins.RetrieveModelMixin,
                          viewsets.GenericViewSet):
     queryset = Application.objects.filter(active=True)
     serializer_class = ApplicationSerializer
@@ -315,7 +332,7 @@ class ApplicationViewSet(mixins.CreateModelMixin,mixins.ListModelMixin,
         return Response({"error":f"Trạng thái không hợp lê!"}, status=status.HTTP_400_BAD_REQUEST)
 
 
-class CategoryView(viewsets.ModelViewSet, generics.ListAPIView):
+class CategoryView(viewsets.ReadOnlyModelViewSet):
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
     permission_classes = [permissions.AllowAny]

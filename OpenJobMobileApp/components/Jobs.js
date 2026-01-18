@@ -90,10 +90,17 @@ const Jobs = ({ category_id, name, location, min_salary, working_time_id }) => {
                             />
                             <Card.Content>
                                 <View style={MyStyles.row}>
-                                    <Chip style={MyStyles.margin}>{Math.round(item.min_salary)}tr-{Math.round(item.max_salary)}tr</Chip>
-                                    <Chip style={MyStyles.margin}>{item.location}</Chip>
-                                    {item.working_times && item.working_times.map((time, index) => (
-                                        <Chip key={index} style={MyStyles.margin}>{time}</Chip>))}
+                                    <Chip icon="cash" style={MyStyles.margin}>{Math.round(item.min_salary)}tr-{Math.round(item.max_salary)}tr</Chip>
+                                    <Chip icon="map-marker" style={MyStyles.margin}>{item.location}</Chip>
+                                    {item.shifts && item.shifts.map((shift) => (
+                                        <Chip 
+                                            key={shift.id} 
+                                            icon="clock-outline" 
+                                            style={MyStyles.margin}
+                                        >
+                                            {shift.name}  
+                                        </Chip>
+                                    ))}
                                 </View>
                             </Card.Content>
                         </Card>

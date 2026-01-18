@@ -90,10 +90,11 @@ class EmployerRegistrationSerializer(UserSerializer):
     address=serializers.CharField(write_only=True)
     logo = serializers.ImageField(write_only=True)
     description=serializers.CharField(write_only=True,required=False,allow_blank=True)
+    license = serializers.FileField(write_only=True, required=True)
 
     class Meta(UserSerializer.Meta):
         fields =[f for f in UserSerializer.Meta.fields if f!='role']
-        fields+=['tax_code','company_name','address','logo','description']
+        fields+=['tax_code','company_name','address','logo','description', 'license']
         ref_name = 'EmployerRegistration'
 
 
@@ -109,7 +110,7 @@ class EmployerRegistrationSerializer(UserSerializer):
         request = self.context.get('request')
         image_list = request.FILES.getlist('images')
 
-        employer_fields=['tax_code','company_name','address','logo','description']
+        employer_fields=['tax_code','company_name','address','logo','description', 'license']
         employer_data={f:validated_data.pop(f) for f in employer_fields if f in validated_data}
 
         validated_data['role'] =RoleUser.EMPLOYER
@@ -179,7 +180,8 @@ class JobSerializer(serializers.ModelSerializer):
             'min_salary', 'max_salary', 'location',
             'map_url', 'payment_type', 'deadline',
             'created_date', 'duration',
-            'employer', 'categories', 'company_images'
+            'employer', 'categories', 'company_images',
+            'active'
         ]
 
     def to_representation(self, instance):
@@ -187,13 +189,9 @@ class JobSerializer(serializers.ModelSerializer):
         data['shifts'] = WorkingTimeSerializer(instance.shifts.all(),many=True).data
         return data
 
-    def get_working_times(self, obj):
-        slots=obj.job_time_slots.all()
-        return [slot.working_time.name for slot in slots]
-
     def get_categories(self, obj):
         links = obj.job_categories_links.all()
-        return [link.category.name for link in links]
+        return [CategorySerializer(link.category).data for link in links]
 
     def get_employer_logo(self, obj):
         if obj.employer and obj.employer.logo:
@@ -277,4 +275,4 @@ class EmploymentSerializer(serializers.ModelSerializer):
 class EmployerSerializer(serializers.ModelSerializer):
     class Meta:
         model = Employer
-        fields = ['id', 'company_name', 'logo', 'description', 'address', 'tax_code', 'created_date', 'updated_date']
+        fields = ['id', 'company_name', 'logo', 'description', 'address', 'tax_code', 'created_date', 'updated_date','license']

@@ -1,29 +1,27 @@
-import { View, Text, ScrollView, Alert, RefreshControl, StyleSheet } from "react-native";
+
+import { View, Text, ScrollView, Alert, RefreshControl, StyleSheet, Image } from "react-native";
 import MyStyles from "../../styles/MyStyles";
 import { Avatar, Button, Card, Divider, List } from "react-native-paper";
-import { use, useContext, useEffect, useState } from "react";
+import { useContext, useEffect, useState } from "react";
 import { MyUserContext } from "../../utils/MyContexts";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import Styles from "../Home/Styles";
-import { Image } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import * as DocumentPicker from 'expo-document-picker';
 import { authApis, endpoints } from "../../utils/Apis";
 import MyButton from "../../components/MyButton";
 import MyColor from "../../utils/MyColor";
+import Styles from "../Home/Styles";
 
 const Profile = () => {
     const [user, dispatch] = useContext(MyUserContext);
     const [loading, setLoading] = useState(false);
     const nav = useNavigation();
 
+
     const logout = async () => {
         await AsyncStorage.removeItem("token");
-
-        dispatch({
-            "type": "logout"
-        });
-    }
+        dispatch({ "type": "logout" });
+    };
 
     const loadCurrentUser = async () => {
         try {
@@ -31,7 +29,6 @@ const Profile = () => {
             const token = await AsyncStorage.getItem("token");
             if (token) {
                 const res = await authApis(token).get(endpoints['current-user']);
-                console.log(res.data)
                 dispatch({
                     type: "login",
                     payload: res.data
@@ -44,11 +41,11 @@ const Profile = () => {
         }
     };
 
-
     useEffect(() => {
         loadCurrentUser();
     }, []);
 
+    
     const updateCV = async () => {
         let res = await DocumentPicker.getDocumentAsync({ type: "application/pdf" });
         if (res.canceled === false) {
@@ -78,126 +75,123 @@ const Profile = () => {
         }
     };
 
+    if (!user) return <View style={MyStyles.container}><Text>Đang tải...</Text></View>;
+
     return (
-        <ScrollView style={Styles.container} refreshControl={
-            <RefreshControl refreshing={loading} onRefresh={loadCurrentUser} />}>
-            <View style={{ alignItems: 'center', justifyContent: 'center', margin: 8 }}>
+        <ScrollView 
+            style={Styles.container} 
+            refreshControl={<RefreshControl refreshing={loading} onRefresh={loadCurrentUser} />}
+        >
+            {/* Header thông tin User */}
+            <View style={styles.headerContainer}>
                 <Image style={MyStyles.avatarProfile} source={{ uri: user.avatar }} />
                 <Text style={styles.name}>{user.last_name} {user.first_name}</Text>
-                <Text style={styles.email}>{user.email}</Text>
+                <Text style={styles.email}>{user.email} ({user.role})</Text>
             </View>
 
-
-
+            {/* Mục: Hồ sơ của tôi */}
             <Card style={Styles.card}>
                 <List.Section>
                     <List.Subheader style={Styles.title}>Hồ Sơ Của Tôi</List.Subheader>
+                    
                     <List.Item
                         title="Thông tin cá nhân"
                         left={props => <List.Icon {...props} icon="account-edit" />}
                         onPress={() => nav.navigate('Home', { screen: 'UserDetails' })}
                     />
 
-
-                    <Divider />
-                    <List.Item
-                        title="Cập nhật CV"
-                        description={(user && user.cv) ? "Đã có CV trên hệ thống!" : "Chưa cập nhật CV!"}
-                        left={props => <List.Icon {...props} icon="file-pdf-box" />}
-                        onPress={updateCV}
-                    />
-
-
-
-                    {user.role == 'employer' &&
-                        <View>
+                    {user.role === 'candidate' && (
+                        <>
                             <Divider />
                             <List.Item
-                                title="Ca làm việc"
-                                left={props => <List.Icon {...props} icon="clock-time-four" />}
-                                onPress={() => nav.navigate("Home", {
-                                    screen: "Shift"
-                                })}
+                                title="Cập nhật CV"
+                                description={user.cv ? "Đã có CV trên hệ thống!" : "Chưa cập nhật CV!"}
+                                left={props => <List.Icon {...props} icon="file-pdf-box" />}
+                                onPress={updateCV}
                             />
-                        </View>
-                    }
-
-
-
-                    {user.role == 'employer' &&
-                        <View>
-                            <Divider />
-                            <List.Item
-                                title="Nhân viên"
-                                left={props => <List.Icon {...props} icon="account" />}
-                                onPress={() => nav.navigate("Home", {
-                                    screen: "CandidateManagement"
-                                })}
-                            />
-                        </View>
-                    }
-
-
-
-
-
-                    {user.role == 'candidate' &&
-                        <View>
-                            <Divider />
-                            <List.Item
-                                title="Công việc của tôi"
-                                left={props => <List.Icon {...props} icon="clock-time-four" />}
-                                onPress={() => nav.navigate("Home", {
-                                    screen: "MyEmployment"
-                                })}
-                            />
-                        </View>
-                    }
+                        </>
+                    )}
                 </List.Section>
             </Card>
-
-
-
-
 
             <Card style={Styles.card}>
                 <List.Section>
-                    <List.Subheader style={Styles.title}>Hoạt động</List.Subheader>
-                    {user?.role === 'candidate' ? (
-                        <List.Item
-                            title="Lịch Sử Ứng Tuyển"
-                            description="Theo dõi trạng thái các công việc đã nộp"
-                            left={props => <List.Icon {...props} icon="history" color="#1a73e8" />}
-                            onPress={() => nav.navigate('Home', { screen: 'Applications' })}
-                        />
-                    ) : user?.role === 'employer' ? (
-                        <List.Item
-                            title="Lịch sử Tin Đăng"
-                            description="Xem lại các tin từng đăng"
-                            left={props => <List.Icon {...props} icon="history" color="#1a73e8" />}
-                            onPress={() => nav.navigate('Home', { screen: 'JobHistory' })}
-                        />
+                    <List.Subheader style={Styles.title}>Quản Lý Hoạt Động</List.Subheader>
+
+                    {user.role === 'candidate' ? (
+                        <>
+                            <List.Item
+                                title="Công việc của tôi"
+                                description="Các công việc bạn đang làm"
+                                left={props => <List.Icon {...props} icon="briefcase-check" />}
+                                onPress={() => nav.navigate("Home", { screen: "MyEmployment" })}
+                            />
+                            <Divider />
+                            <List.Item
+                                title="Lịch Sử Ứng Tuyển"
+                                description="Theo dõi trạng thái các công việc đã nộp"
+                                left={props => <List.Icon {...props} icon="history" />}
+                                onPress={() => nav.navigate('Home', { screen: 'Applications' })}
+                            />
+                        </>
+                    ) : user.role === 'employer' ? (
+                        <>
+                            <List.Item
+                                title="Quản lý nhân viên"
+                                description="Danh sách ứng viên đã ứng tuyển"
+                                left={props => <List.Icon {...props} icon="account-group" />}
+                                onPress={() => nav.navigate("Home", { screen: "CandidateManagement" })}
+                            />
+                            <Divider />
+                            <List.Item
+                                title="Quản lý ca làm việc"
+                                left={props => <List.Icon {...props} icon="clock-outline" />}
+                                onPress={() => nav.navigate("Home", { screen: "Shift" })}
+                            />
+                            <Divider />
+                            <List.Item
+                                title="Lịch sử Tin Đăng"
+                                left={props => <List.Icon {...props} icon="file-document-outline" />}
+                                onPress={() => nav.navigate('Home', { screen: 'JobHistory' })}
+                            />
+                        </>
                     ) : null}
                 </List.Section>
             </Card>
-            <MyButton onPress={logout} backGroundColor={MyColor.red50} label="Đăng xuất" icon="logout" borderColor={MyColor.red} labelColor={MyColor.red} iconColor={MyColor.red} />
+
+            <View style={{ padding: 16 }}>
+                <MyButton 
+                    onPress={logout} 
+                    backGroundColor={MyColor.red50} 
+                    label="Đăng xuất" 
+                    icon="logout" 
+                    borderColor={MyColor.red} 
+                    labelColor={MyColor.red} 
+                    iconColor={MyColor.red} 
+                />
+            </View>
         </ScrollView>
     );
 }
 
 const styles = StyleSheet.create({
-    name:
-    {
-        fontSize: 20,
-        fontWeight: 700,
-        color: 'black'
+    headerContainer: {
+        alignItems: 'center', 
+        justifyContent: 'center', 
+        paddingVertical: 20,
+        backgroundColor: '#fff'
     },
-    email:
-    {
+    name: {
+        fontSize: 20,
+        fontWeight: '700',
+        color: 'black',
+        marginTop: 10
+    },
+    email: {
         fontSize: 14,
-        fontWeight: 600,
+        fontWeight: '600',
         color: MyColor.darkGrey
     }
-})
+});
 
 export default Profile;
